@@ -13,7 +13,7 @@ namespace ChoiceEnhanced.Patches
         [HarmonyPatch(nameof(GUIManager.LateUpdate))]
         private static void NothinJustTest_Postfix()
         {
-            Plugin.Log.LogInfo("Testing that the mod loaded correctly. <MAGIC STRING> 12345 </MAGIC STRING>");
+            
         }
     }
 }

@@ -1,6 +1,8 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
+using UnityEngine;
 
 namespace ChoiceEnhanced;
 
@@ -34,6 +36,36 @@ public partial class Plugin : BaseUnityPlugin
 
         // Log our awake here so we can see it in LogOutput.log file
         Log.LogInfo($"Plugin {Name} is loaded!");
+
+        // Add this to your Plugin.Awake() BEFORE patching
+        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            if (asm.FullName.Contains("PEAKChoice"))
+            {
+                Log.LogInfo($"Found assembly: {asm.FullName}");
+                foreach (var type in asm.GetTypes())
+                {
+                    if (type.Name.Contains("Addition"))
+                    {
+                        Log.LogInfo($"  Type: {type.FullName}");
+                        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
+                        {
+                            if (method.Name.Contains("Forced"))
+                            {
+                                Log.LogInfo($"    Method: {method.Name} ({method.DeclaringType})");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
         _harmony.PatchAll(Assembly.GetExecutingAssembly());
+        
+        // Create a persistent GameObject for our input handler
+        var controllerObj = new GameObject("ChoiceEnhanced_BiomeController");
+        controllerObj.AddComponent<BiomeController>();
+        DontDestroyOnLoad(controllerObj);
     }
 }
