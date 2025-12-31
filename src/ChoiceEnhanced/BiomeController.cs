@@ -16,11 +16,13 @@ public class BiomeController : MonoBehaviour
     private static FieldInfo? _forcedBiomesField;   // Likely used by Additions.ForcedContains()
     private static FieldInfo? _layoutOrderField;
     private static FieldInfo? _forceLayoutOrderField;
+    private static FieldInfo? _seedField;           // PEAKChoice.Seed for world generation
     
     private static bool _initialized;
 
     public static string SelectedBiome2 { get; private set; } = ""; // Tropics vs Roots
     public static string SelectedBiome3 { get; private set; } = ""; // Alpine vs Mesa
+    public static int? SyncedSeed { get; private set; } = null;     // Seed synced from host
 
     private void Awake()
     {
@@ -58,8 +60,12 @@ public class BiomeController : MonoBehaviour
                 // This could be a List<string>, HashSet<string>, or string field
                 _forcedBiomesField = _peakChoiceType.GetField("ForcedBiomes", 
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                
+                // Get the Seed field for world generation sync
+                _seedField = _peakChoiceType.GetField("Seed", 
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
 
-                Plugin.Log.LogInfo($"PEAKChoice type found. LayoutOrder field: {_layoutOrderField != null}");
+                Plugin.Log.LogInfo($"PEAKChoice type found. LayoutOrder: {_layoutOrderField != null}, Seed: {_seedField != null}");
                 _initialized = true;
             }
             else
@@ -122,7 +128,69 @@ public class BiomeController : MonoBehaviour
     {
         if (slot == 2) SelectedBiome2 = biome;
         else if (slot == 3) SelectedBiome3 = biome;
+        
+        // Immediately sync to room properties if we're the host in a room
+        if (Photon.Pun.PhotonNetwork.InRoom && Photon.Pun.PhotonNetwork.IsMasterClient)
+        {
+            NetworkSync.SetRoomBiomeSelection();
+        }
+        
         TryApplyToPEAKChoice();
+    }
+
+    /// <summary>
+    /// Called by NetworkSync when receiving biome selection from host.
+    /// </summary>
+    public static void SetFromNetwork(string biome2, string biome3, int seed)
+    {
+        Plugin.Log.LogInfo($"Applying from network: Biome2={biome2}, Biome3={biome3}, Seed={seed}");
+        SelectedBiome2 = biome2;
+        SelectedBiome3 = biome3;
+        SyncedSeed = seed;
+        TryApplySeedToPEAKChoice(seed);
+        TryApplyToPEAKChoice();
+    }
+
+    /// <summary>
+    /// Gets the current PEAKChoice seed value.
+    /// </summary>
+    public static int GetCurrentSeed()
+    {
+        InitializeReflection();
+        if (_seedField != null)
+        {
+            var value = _seedField.GetValue(null);
+            if (value is int seedValue)
+            {
+                return seedValue;
+            }
+        }
+        // Fallback: use Unity's random seed or a default
+        return UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+    }
+
+    /// <summary>
+    /// Applies a seed value to PEAKChoice.
+    /// </summary>
+    private static void TryApplySeedToPEAKChoice(int seed)
+    {
+        InitializeReflection();
+        if (_seedField != null)
+        {
+            try
+            {
+                _seedField.SetValue(null, seed);
+                Plugin.Log.LogInfo($"Applied seed {seed} to PEAKChoice");
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogError($"Failed to apply seed to PEAKChoice: {ex}");
+            }
+        }
+        else
+        {
+            Plugin.Log.LogWarning("Cannot apply seed - PEAKChoice.Seed field not found");
+        }
     }
 
     /// <summary>

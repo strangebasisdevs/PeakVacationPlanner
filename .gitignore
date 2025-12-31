@@ -229,3 +229,5 @@ Config.Build.user.props
 
 # User Build Properties
 *.user.props
+
+decomp/

@@ -15,7 +15,7 @@ namespace ChoiceEnhanced;
 // This BepInAutoPlugin attribute comes from the Hamunii.BepInEx.AutoPlugin
 // NuGet package, and it will generate the BepInPlugin attribute for you!
 // For more info, see https://github.com/Hamunii/BepInEx.AutoPlugin
-[BepInDependency("off_grid.PEAKChoice")]
+// [BepInDependency("off_grid.PEAKChoice")]  // Disabled for testing
 [BepInAutoPlugin]
 public partial class Plugin : BaseUnityPlugin
 {
@@ -37,6 +37,7 @@ public partial class Plugin : BaseUnityPlugin
         // Log our awake here so we can see it in LogOutput.log file
         Log.LogInfo($"Plugin {Name} is loaded!");
 
+        /* DISABLED FOR TESTING - PEAKChoice reflection code
         // Add this to your Plugin.Awake() BEFORE patching
         foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
         {
@@ -59,13 +60,16 @@ public partial class Plugin : BaseUnityPlugin
                 }
             }
         }
-
+        */
 
         _harmony.PatchAll(Assembly.GetExecutingAssembly());
         
-        // Create a persistent GameObject for our input handler
-        var controllerObj = new GameObject("ChoiceEnhanced_BiomeController");
+        /* DISABLED FOR TESTING - BiomeController and NetworkSync
+        // Create a persistent GameObject for our input handler and network sync
+        var controllerObj = new GameObject("ChoiceEnhanced_Controller");
         controllerObj.AddComponent<BiomeController>();
+        controllerObj.AddComponent<NetworkSync>();  // MonoBehaviourPunCallbacks for room property sync
         DontDestroyOnLoad(controllerObj);
+        */
     }
 }

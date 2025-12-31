@@ -1,0 +1,124 @@
+using HarmonyLib;
+using Photon.Pun;
+using System;
+
+namespace ChoiceEnhanced.Patches;
+
+/// <summary>
+/// Patches PEAKChoice's Additions.ForcedContains to inject our biome choices
+/// </summary>
+[HarmonyPatch]
+internal static class AdditionsPatch
+{
+    private static bool _hasTriedRoomSync;
+
+    // Target the Additions.ForcedContains method
+    [HarmonyTargetMethod]
+    static System.Reflection.MethodBase TargetMethod()
+    {
+        var additionsType = Type.GetType("PEAKChoice.Features.Additions, off_grid.PEAKChoice");
+        if (additionsType == null)
+        {
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                additionsType = asm.GetType("PEAKChoice.Features.Additions");
+                if (additionsType != null) break;
+            }
+        }
+        
+        if (additionsType != null)
+        {
+            var method = additionsType.GetMethod("ForcedContains", 
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            if (method != null)
+            {
+                Plugin.Log.LogInfo("Found Additions.ForcedContains to patch");
+                return method;
+            }
+        }
+        
+        Plugin.Log.LogWarning("Could not find Additions.ForcedContains");
+        return null!;
+    }
+
+    /// <summary>
+    /// Ensures client has loaded biome selection from room properties.
+    /// Called lazily when ForcedContains is first invoked.
+    /// </summary>
+    private static void EnsureClientHasRoomProperties()
+    {
+        // Only try once per session
+        if (_hasTriedRoomSync) return;
+        _hasTriedRoomSync = true;
+
+        // Only for clients (not host)
+        if (!PhotonNetwork.InRoom || PhotonNetwork.IsMasterClient) return;
+
+        // Only if we don't already have selections
+        if (!string.IsNullOrEmpty(BiomeController.SelectedBiome2) || 
+            !string.IsNullOrEmpty(BiomeController.SelectedBiome3)) return;
+
+        Plugin.Log.LogInfo("[AdditionsPatch] Client has no biome selection, reading room properties...");
+
+        if (NetworkSync.TryGetRoomBiomeSelection(out string biome2, out string biome3, out int seed))
+        {
+            Plugin.Log.LogInfo($"[AdditionsPatch] Got room properties: Biome2={biome2}, Biome3={biome3}, Seed={seed}");
+            BiomeController.SetFromNetwork(biome2, biome3, seed);
+        }
+        else
+        {
+            Plugin.Log.LogWarning("[AdditionsPatch] No biome properties found in room");
+        }
+    }
+
+    /// <summary>
+    /// Postfix that overrides the result based on our selections.
+    /// Must return TRUE for selected biome and FALSE for its counterpart.
+    /// </summary>
+    [HarmonyPostfix]
+    static void Postfix(string __0, ref bool __result)
+    {
+        // Ensure client has loaded room properties before checking
+        EnsureClientHasRoomProperties();
+
+        string biomeToCheck = __0;
+        bool originalResult = __result;
+        
+        // Handle Biome slot 2: Tropics vs Roots
+        if (!string.IsNullOrEmpty(BiomeController.SelectedBiome2))
+        {
+            if (biomeToCheck == "Tropics")
+            {
+                __result = BiomeController.SelectedBiome2 == "Tropics";
+                Plugin.Log.LogInfo($"[ForcedContains] {biomeToCheck}: original={originalResult}, override={__result}, Selected2={BiomeController.SelectedBiome2}");
+                return;
+            }
+            if (biomeToCheck == "Roots")
+            {
+                __result = BiomeController.SelectedBiome2 == "Roots";
+                Plugin.Log.LogInfo($"[ForcedContains] {biomeToCheck}: original={originalResult}, override={__result}, Selected2={BiomeController.SelectedBiome2}");
+                return;
+            }
+        }
+
+        // Handle Biome slot 3: Alpine vs Mesa
+        if (!string.IsNullOrEmpty(BiomeController.SelectedBiome3))
+        {
+            if (biomeToCheck == "Alpine")
+            {
+                __result = BiomeController.SelectedBiome3 == "Alpine";
+                Plugin.Log.LogInfo($"[ForcedContains] {biomeToCheck}: original={originalResult}, override={__result}, Selected3={BiomeController.SelectedBiome3}");
+                return;
+            }
+            if (biomeToCheck == "Mesa")
+            {
+                __result = BiomeController.SelectedBiome3 == "Mesa";
+                Plugin.Log.LogInfo($"[ForcedContains] {biomeToCheck}: original={originalResult}, override={__result}, Selected3={BiomeController.SelectedBiome3}");
+                return;
+            }
+        }
+        
+        // If no selection for this slot, log what's happening
+        Plugin.Log.LogInfo($"[ForcedContains] {biomeToCheck}: NO OVERRIDE (Selected2={BiomeController.SelectedBiome2}, Selected3={BiomeController.SelectedBiome3}), result={__result}");
+    }
+}

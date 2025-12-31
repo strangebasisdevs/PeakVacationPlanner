@@ -28,4 +28,8 @@
   need to add it as a dependency in your manifest.json, of course
   -->
 
+  <ItemGroup>
+    <PackageReference Include="DAa-PEAKNetworkingLibrary" Version="1.0.7" Private="False"/>
+  </ItemGroup>
+
 </Project>

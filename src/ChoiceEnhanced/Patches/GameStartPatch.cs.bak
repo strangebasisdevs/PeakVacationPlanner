@@ -1,0 +1,87 @@
+using System;
+using System.Reflection;
+using HarmonyLib;
+using Photon.Pun;
+
+namespace ChoiceEnhanced.Patches;
+
+/// <summary>
+/// Patches game start to sync biome selections from host to clients.
+/// Room properties should already be set by host when they made their selection in lobby.
+/// </summary>
+[HarmonyPatch]
+internal static class GameStartPatch
+{
+    /// <summary>
+    /// Patch MapHandler.DetectBiomes to read biome selection before detection.
+    /// </summary>
+    [HarmonyTargetMethod]
+    static MethodBase? TargetMethod()
+    {
+        try
+        {
+            var mapHandlerType = typeof(MapHandler);
+            var method = mapHandlerType.GetMethod("DetectBiomes",
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+
+            if (method != null)
+            {
+                Plugin.Log.LogInfo($"Found MapHandler.DetectBiomes to patch for network sync");
+                return method;
+            }
+
+            Plugin.Log.LogWarning("Could not find MapHandler.DetectBiomes for network sync");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.LogError($"Error finding target method for GameStartPatch: {ex}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Before DetectBiomes runs:
+    /// - Host: Properties already set when they pressed numpad keys
+    /// - Client: Read room properties that host already set
+    /// </summary>
+    [HarmonyPrefix]
+    static void Prefix()
+    {
+        try
+        {
+            if (!PhotonNetwork.InRoom)
+            {
+                Plugin.Log.LogInfo("Not in a Photon room, skipping network sync");
+                return;
+            }
+
+            if (PhotonNetwork.IsMasterClient)
+            {
+                // Host - properties should already be set from BiomeController
+                // But set them again here as a fallback in case host didn't change anything
+                Plugin.Log.LogInfo("DetectBiomes starting - HOST (properties should already be set)");
+                NetworkSync.SetRoomBiomeSelection();
+            }
+            else
+            {
+                // Client - read room properties (should already exist from host)
+                Plugin.Log.LogInfo("DetectBiomes starting - CLIENT reading room properties");
+                
+                if (NetworkSync.TryGetRoomBiomeSelection(out string biome2, out string biome3, out int seed))
+                {
+                    Plugin.Log.LogInfo($"[CLIENT] Got room properties: Biome2={biome2}, Biome3={biome3}, Seed={seed}");
+                    BiomeController.SetFromNetwork(biome2, biome3, seed);
+                }
+                else
+                {
+                    Plugin.Log.LogWarning("[CLIENT] No biome properties found in room, using local config");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.LogError($"Error in GameStartPatch.Prefix: {ex}");
+        }
+    }
+}
