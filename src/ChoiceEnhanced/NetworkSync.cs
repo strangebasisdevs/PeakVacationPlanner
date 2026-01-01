@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
@@ -9,13 +8,14 @@ namespace ChoiceEnhanced;
 /// <summary>
 /// Handles syncing biome selections from host to clients using Photon Room Custom Properties.
 /// Room properties persist and are automatically sent to joining players.
+/// 
+/// Simplified version - no longer syncs seeds (not needed without PEAKChoice).
 /// </summary>
 public class NetworkSync : MonoBehaviourPunCallbacks
 {
-    // Room property keys for biome selection and seed
+    // Room property keys for biome selection
     private const string PROP_BIOME2 = "CE_Biome2";
     private const string PROP_BIOME3 = "CE_Biome3";
-    private const string PROP_SEED = "CE_Seed";
 
     private static NetworkSync? _instance;
     private static bool _initialized;
@@ -26,19 +26,14 @@ public class NetworkSync : MonoBehaviourPunCallbacks
     public static bool HasReceivedFromHost { get; private set; }
 
     /// <summary>
-    /// The received biome2 selection (Tropics/Roots).
+    /// The received biome2 selection ("T" for Tropics, "R" for Roots).
     /// </summary>
     public static string ReceivedBiome2 { get; private set; } = "";
 
     /// <summary>
-    /// The received biome3 selection (Alpine/Mesa).
+    /// The received biome3 selection ("A" for Alpine, "M" for Mesa).
     /// </summary>
     public static string ReceivedBiome3 { get; private set; } = "";
-
-    /// <summary>
-    /// The received seed for world generation.
-    /// </summary>
-    public static int ReceivedSeed { get; private set; } = 0;
 
     private void Awake()
     {
@@ -49,12 +44,11 @@ public class NetworkSync : MonoBehaviourPunCallbacks
         }
         _instance = this;
         _initialized = true;
-        Plugin.Log.LogInfo("NetworkSync initialized (using Photon Room Properties)");
+        Plugin.Log.LogInfo("NetworkSync initialized");
     }
 
     /// <summary>
     /// Called by host to store biome selection in room properties.
-    /// This data persists and is automatically sent to joining players.
     /// </summary>
     public static void SetRoomBiomeSelection()
     {
@@ -72,71 +66,57 @@ public class NetworkSync : MonoBehaviourPunCallbacks
 
         string biome2 = BiomeController.SelectedBiome2 ?? "";
         string biome3 = BiomeController.SelectedBiome3 ?? "";
-        int seed = BiomeController.GetCurrentSeed();
 
         var props = new Hashtable
         {
             { PROP_BIOME2, biome2 },
-            { PROP_BIOME3, biome3 },
-            { PROP_SEED, seed }
+            { PROP_BIOME3, biome3 }
         };
 
         PhotonNetwork.CurrentRoom.SetCustomProperties(props);
-        Plugin.Log.LogInfo($"[HOST] Set room properties: Biome2={biome2}, Biome3={biome3}, Seed={seed}");
+        Plugin.Log.LogInfo($"[HOST] Set room properties: Biome2={biome2}, Biome3={biome3}");
     }
 
     /// <summary>
     /// Called by clients to read biome selection from room properties.
-    /// Returns true if properties were found and applied.
     /// </summary>
-    public static bool TryGetRoomBiomeSelection()
-    {
-        return TryGetRoomBiomeSelection(out _, out _, out _);
-    }
-
-    /// <summary>
-    /// Called by clients to read biome selection from room properties.
-    /// Returns true if properties were found, with values in out parameters.
-    /// </summary>
-    public static bool TryGetRoomBiomeSelection(out string biome2, out string biome3, out int seed)
+    public static bool TryGetRoomBiomeSelection(out string biome2, out string biome3)
     {
         biome2 = "";
         biome3 = "";
-        seed = 0;
 
         if (!PhotonNetwork.InRoom)
-        {
             return false;
-        }
 
         var props = PhotonNetwork.CurrentRoom.CustomProperties;
 
-        if (props.TryGetValue(PROP_BIOME2, out object? biome2Obj) ||
-            props.TryGetValue(PROP_BIOME3, out object? biome3Obj) ||
-            props.TryGetValue(PROP_SEED, out object? seedObj))
+        bool found = false;
+        if (props.TryGetValue(PROP_BIOME2, out object? biome2Obj))
         {
             biome2 = biome2Obj as string ?? "";
-            biome3 = props.TryGetValue(PROP_BIOME3, out object? b3) ? b3 as string ?? "" : "";
-            seed = props.TryGetValue(PROP_SEED, out object? s) && s is int sInt ? sInt : 0;
-            
             ReceivedBiome2 = biome2;
-            ReceivedBiome3 = biome3;
-            ReceivedSeed = seed;
-            HasReceivedFromHost = true;
-
-            return true;
+            found = true;
         }
 
-        return false;
+        if (props.TryGetValue(PROP_BIOME3, out object? biome3Obj))
+        {
+            biome3 = biome3Obj as string ?? "";
+            ReceivedBiome3 = biome3;
+            found = true;
+        }
+
+        if (found)
+            HasReceivedFromHost = true;
+
+        return found;
     }
 
     /// <summary>
     /// Photon callback when room properties change.
-    /// This is called on all clients when the host sets properties.
     /// </summary>
     public override void OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
     {
-        Plugin.Log.LogInfo($"[CALLBACK] OnRoomPropertiesUpdate called with {propertiesThatChanged.Count} properties");
+        Plugin.Log.LogInfo($"[CALLBACK] OnRoomPropertiesUpdate with {propertiesThatChanged.Count} properties");
 
         bool updated = false;
 
@@ -154,21 +134,14 @@ public class NetworkSync : MonoBehaviourPunCallbacks
             Plugin.Log.LogInfo($"[CALLBACK] Biome3 updated to: {ReceivedBiome3}");
         }
 
-        if (propertiesThatChanged.TryGetValue(PROP_SEED, out object? seedObj) && seedObj is int seedInt)
-        {
-            ReceivedSeed = seedInt;
-            updated = true;
-            Plugin.Log.LogInfo($"[CALLBACK] Seed updated to: {ReceivedSeed}");
-        }
-
         if (updated)
         {
             HasReceivedFromHost = true;
 
-            // Don't apply on host (they set it)
+            // Apply on clients (not host - they set it)
             if (!PhotonNetwork.IsMasterClient)
             {
-                BiomeController.SetFromNetwork(ReceivedBiome2, ReceivedBiome3, ReceivedSeed);
+                BiomeController.SetFromNetwork(ReceivedBiome2, ReceivedBiome3);
                 Plugin.Log.LogInfo($"[CALLBACK] Applied biome selection from host");
             }
         }
@@ -176,7 +149,6 @@ public class NetworkSync : MonoBehaviourPunCallbacks
 
     /// <summary>
     /// Photon callback when joining a room.
-    /// Read existing room properties set by host.
     /// </summary>
     public override void OnJoinedRoom()
     {
@@ -185,7 +157,10 @@ public class NetworkSync : MonoBehaviourPunCallbacks
         if (!PhotonNetwork.IsMasterClient)
         {
             // Client joining - try to read host's biome selection
-            TryGetRoomBiomeSelection();
+            if (TryGetRoomBiomeSelection(out string biome2, out string biome3))
+            {
+                BiomeController.SetFromNetwork(biome2, biome3);
+            }
         }
     }
 

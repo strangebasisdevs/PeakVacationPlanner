@@ -1,21 +1,21 @@
-﻿using System;
-using System.Reflection;
+﻿using System.Reflection;
 using BepInEx;
 using BepInEx.Logging;
 using UnityEngine;
 
 namespace ChoiceEnhanced;
 
-// Here are some basic resources on code style and naming conventions to help
-// you in your first CSharp plugin!
-// https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions
-// https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/identifier-names
-// https://learn.microsoft.com/en-us/dotnet/standard/design-guidelines/names-of-namespaces
-
-// This BepInAutoPlugin attribute comes from the Hamunii.BepInEx.AutoPlugin
-// NuGet package, and it will generate the BepInPlugin attribute for you!
-// For more info, see https://github.com/Hamunii/BepInEx.AutoPlugin
-// [BepInDependency("off_grid.PEAKChoice")]  // Disabled for testing
+/// <summary>
+/// ChoiceEnhanced - Override biome selection in PEAK.
+/// 
+/// Controls:
+/// - Numpad 1: Force Tropics
+/// - Numpad 2: Force Roots
+/// - Numpad 4: Force Alpine
+/// - Numpad 5: Force Mesa
+/// - Numpad 0: Clear all overrides
+/// - Numpad Enter: Log current selection
+/// </summary>
 [BepInAutoPlugin]
 public partial class Plugin : BaseUnityPlugin
 {
@@ -24,52 +24,18 @@ public partial class Plugin : BaseUnityPlugin
 
     private void Awake()
     {
-        // BepInEx gives us a logger which we can use to log information.
-        // See https://lethal.wiki/dev/fundamentals/logging
         Log = Logger;
-
-        // BepInEx also gives us a config file for easy configuration.
-        // See https://lethal.wiki/dev/intermediate/custom-configs
-
-        // We can apply our hooks here.
-        // See https://lethal.wiki/dev/fundamentals/patching-code
-
-        // Log our awake here so we can see it in LogOutput.log file
         Log.LogInfo($"Plugin {Name} is loaded!");
 
-        /* DISABLED FOR TESTING - PEAKChoice reflection code
-        // Add this to your Plugin.Awake() BEFORE patching
-        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-        {
-            if (asm.FullName.Contains("PEAKChoice"))
-            {
-                Log.LogInfo($"Found assembly: {asm.FullName}");
-                foreach (var type in asm.GetTypes())
-                {
-                    if (type.Name.Contains("Addition"))
-                    {
-                        Log.LogInfo($"  Type: {type.FullName}");
-                        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
-                        {
-                            if (method.Name.Contains("Forced"))
-                            {
-                                Log.LogInfo($"    Method: {method.Name} ({method.DeclaringType})");
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        */
-
+        // Apply Harmony patches
         _harmony.PatchAll(Assembly.GetExecutingAssembly());
-        
-        /* DISABLED FOR TESTING - BiomeController and NetworkSync
-        // Create a persistent GameObject for our input handler and network sync
+
+        // Create persistent controller for input handling and network sync
         var controllerObj = new GameObject("ChoiceEnhanced_Controller");
         controllerObj.AddComponent<BiomeController>();
-        controllerObj.AddComponent<NetworkSync>();  // MonoBehaviourPunCallbacks for room property sync
+        controllerObj.AddComponent<NetworkSync>();
         DontDestroyOnLoad(controllerObj);
-        */
+        
+        Log.LogInfo("BiomeController and NetworkSync initialized");
     }
 }

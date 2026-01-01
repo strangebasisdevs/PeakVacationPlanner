@@ -1,231 +1,105 @@
-using System;
-using System.Reflection;
-using BepInEx;
+using ChoiceEnhanced.Patches;
+using Photon.Pun;
 using UnityEngine;
 
 namespace ChoiceEnhanced;
 
 /// <summary>
 /// Handles runtime biome selection via numpad keys.
-/// Hooks into PEAKChoice's configuration to force specific biomes.
+/// Controls LevelOverridePatch to redirect to levels with desired biomes.
+/// 
+/// No longer depends on PEAKChoice - directly patches the game's MapBaker.
 /// </summary>
 public class BiomeController : MonoBehaviour
 {
-    // Cache reflection references to PEAKChoice fields
-    private static Type? _peakChoiceType;
-    private static FieldInfo? _forcedBiomesField;   // Likely used by Additions.ForcedContains()
-    private static FieldInfo? _layoutOrderField;
-    private static FieldInfo? _forceLayoutOrderField;
-    private static FieldInfo? _seedField;           // PEAKChoice.Seed for world generation
-    
-    private static bool _initialized;
-
-    public static string SelectedBiome2 { get; private set; } = ""; // Tropics vs Roots
-    public static string SelectedBiome3 { get; private set; } = ""; // Alpine vs Mesa
-    public static int? SyncedSeed { get; private set; } = null;     // Seed synced from host
-
-    private void Awake()
+    /// <summary>
+    /// Selected biome for slot 2 (Tropics vs Roots).
+    /// "T" for Tropics, "R" for Roots, null for default.
+    /// </summary>
+    public static string? SelectedBiome2
     {
-        InitializeReflection();
+        get => LevelOverridePatch.DesiredBiome2;
+        set => LevelOverridePatch.DesiredBiome2 = value;
     }
 
-    private static void InitializeReflection()
+    /// <summary>
+    /// Selected biome for slot 3 (Alpine vs Mesa).
+    /// "A" for Alpine, "M" for Mesa, null for default.
+    /// </summary>
+    public static string? SelectedBiome3
     {
-        if (_initialized) return;
-
-        try
-        {
-            // Find the PEAKChoice main class
-            _peakChoiceType = Type.GetType("PEAKChoice.PEAKChoice, off_grid.PEAKChoice");
-            
-            if (_peakChoiceType == null)
-            {
-                // Try searching all assemblies
-                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    _peakChoiceType = asm.GetType("PEAKChoice.PEAKChoice");
-                    if (_peakChoiceType != null) break;
-                }
-            }
-
-            if (_peakChoiceType != null)
-            {
-                // Get the fields we need to modify
-                _layoutOrderField = _peakChoiceType.GetField("LayoutOrder", 
-                    BindingFlags.Public | BindingFlags.Static);
-                _forceLayoutOrderField = _peakChoiceType.GetField("ForceLayoutOrder", 
-                    BindingFlags.Public | BindingFlags.Static);
-                
-                // Look for a field that Additions.ForcedContains might check
-                // This could be a List<string>, HashSet<string>, or string field
-                _forcedBiomesField = _peakChoiceType.GetField("ForcedBiomes", 
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-                
-                // Get the Seed field for world generation sync
-                _seedField = _peakChoiceType.GetField("Seed", 
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-
-                Plugin.Log.LogInfo($"PEAKChoice type found. LayoutOrder: {_layoutOrderField != null}, Seed: {_seedField != null}");
-                _initialized = true;
-            }
-            else
-            {
-                Plugin.Log.LogWarning("Could not find PEAKChoice type!");
-            }
-        }
-        catch (Exception ex)
-        {
-            Plugin.Log.LogError($"Failed to initialize reflection: {ex}");
-        }
+        get => LevelOverridePatch.DesiredBiome3;
+        set => LevelOverridePatch.DesiredBiome3 = value;
     }
 
     private void Update()
     {
-        // Numpad 1: Force Tropics (Jungle) instead of Roots
+        HandleKeyboardInput();
+    }
+
+    private void HandleKeyboardInput()
+    {
+        // Numpad 1: Force Tropics (Jungle)
         if (Input.GetKeyDown(KeyCode.Keypad1))
         {
-            SetBiomeChoice("Tropics", 2);
+            SelectedBiome2 = "T";
             Plugin.Log.LogInfo("Biome 2 set to: TROPICS (Jungle)");
-        }
-        
-        // Numpad 2: Force Roots instead of Tropics
-        if (Input.GetKeyDown(KeyCode.Keypad2))
-        {
-            SetBiomeChoice("Roots", 2);
-            Plugin.Log.LogInfo("Biome 2 set to: ROOTS");
+            SyncToRoomIfHost();
         }
 
-        // Numpad 4: Force Alpine (Snow) instead of Mesa
+        // Numpad 2: Force Roots
+        if (Input.GetKeyDown(KeyCode.Keypad2))
+        {
+            SelectedBiome2 = "R";
+            Plugin.Log.LogInfo("Biome 2 set to: ROOTS");
+            SyncToRoomIfHost();
+        }
+
+        // Numpad 4: Force Alpine (Snow)
         if (Input.GetKeyDown(KeyCode.Keypad4))
         {
-            SetBiomeChoice("Alpine", 3);
+            SelectedBiome3 = "A";
             Plugin.Log.LogInfo("Biome 3 set to: ALPINE (Snow)");
+            SyncToRoomIfHost();
         }
-        
-        // Numpad 5: Force Mesa (Desert) instead of Alpine
+
+        // Numpad 5: Force Mesa (Desert)
         if (Input.GetKeyDown(KeyCode.Keypad5))
         {
-            SetBiomeChoice("Mesa", 3);
+            SelectedBiome3 = "M";
             Plugin.Log.LogInfo("Biome 3 set to: MESA (Desert)");
+            SyncToRoomIfHost();
         }
 
         // Numpad 0: Clear all forced selections
         if (Input.GetKeyDown(KeyCode.Keypad0))
         {
-            SelectedBiome2 = "";
-            SelectedBiome3 = "";
-            Plugin.Log.LogInfo("Biome selections CLEARED");
+            LevelOverridePatch.ClearOverrides();
+            SyncToRoomIfHost();
         }
 
         // Numpad Enter: Log current selections
         if (Input.GetKeyDown(KeyCode.KeypadEnter))
         {
-            Plugin.Log.LogInfo($"Current selections - Biome2: {SelectedBiome2 ?? "default"}, Biome3: {SelectedBiome3 ?? "default"}");
+            Plugin.Log.LogInfo($"Current: {LevelOverridePatch.GetSelectionSummary()}");
         }
     }
 
-    private static void SetBiomeChoice(string biome, int slot)
+    private static void SyncToRoomIfHost()
     {
-        if (slot == 2) SelectedBiome2 = biome;
-        else if (slot == 3) SelectedBiome3 = biome;
-        
-        // Immediately sync to room properties if we're the host in a room
-        if (Photon.Pun.PhotonNetwork.InRoom && Photon.Pun.PhotonNetwork.IsMasterClient)
+        if (PhotonNetwork.InRoom && PhotonNetwork.IsMasterClient)
         {
             NetworkSync.SetRoomBiomeSelection();
         }
-        
-        TryApplyToPEAKChoice();
     }
 
     /// <summary>
     /// Called by NetworkSync when receiving biome selection from host.
     /// </summary>
-    public static void SetFromNetwork(string biome2, string biome3, int seed)
+    public static void SetFromNetwork(string? biome2, string? biome3)
     {
-        Plugin.Log.LogInfo($"Applying from network: Biome2={biome2}, Biome3={biome3}, Seed={seed}");
-        SelectedBiome2 = biome2;
-        SelectedBiome3 = biome3;
-        SyncedSeed = seed;
-        TryApplySeedToPEAKChoice(seed);
-        TryApplyToPEAKChoice();
-    }
-
-    /// <summary>
-    /// Gets the current PEAKChoice seed value.
-    /// </summary>
-    public static int GetCurrentSeed()
-    {
-        InitializeReflection();
-        if (_seedField != null)
-        {
-            var value = _seedField.GetValue(null);
-            if (value is int seedValue)
-            {
-                return seedValue;
-            }
-        }
-        // Fallback: use Unity's random seed or a default
-        return UnityEngine.Random.Range(int.MinValue, int.MaxValue);
-    }
-
-    /// <summary>
-    /// Applies a seed value to PEAKChoice.
-    /// </summary>
-    private static void TryApplySeedToPEAKChoice(int seed)
-    {
-        InitializeReflection();
-        if (_seedField != null)
-        {
-            try
-            {
-                _seedField.SetValue(null, seed);
-                Plugin.Log.LogInfo($"Applied seed {seed} to PEAKChoice");
-            }
-            catch (Exception ex)
-            {
-                Plugin.Log.LogError($"Failed to apply seed to PEAKChoice: {ex}");
-            }
-        }
-        else
-        {
-            Plugin.Log.LogWarning("Cannot apply seed - PEAKChoice.Seed field not found");
-        }
-    }
-
-    /// <summary>
-    /// Attempts to apply our selection to PEAKChoice's internal state
-    /// </summary>
-    private static void TryApplyToPEAKChoice()
-    {
-        if (!_initialized || _peakChoiceType == null) return;
-
-        try
-        {
-            // If PEAKChoice exposes ForcedBiomes as a collection, add to it
-            if (_forcedBiomesField != null)
-            {
-                var value = _forcedBiomesField.GetValue(null);
-                // Handle different collection types
-                if (value is System.Collections.Generic.List<string> list)
-                {
-                    list.Clear();
-                    if (!string.IsNullOrEmpty(SelectedBiome2)) list.Add(SelectedBiome2);
-                    if (!string.IsNullOrEmpty(SelectedBiome3)) list.Add(SelectedBiome3);
-                }
-                else if (value is System.Collections.Generic.HashSet<string> hashSet)
-                {
-                    hashSet.Clear();
-                    if (!string.IsNullOrEmpty(SelectedBiome2)) hashSet.Add(SelectedBiome2);
-                    if (!string.IsNullOrEmpty(SelectedBiome3)) hashSet.Add(SelectedBiome3);
-                }
-            }
-
-            Plugin.Log.LogInfo("Applied biome selection to PEAKChoice");
-        }
-        catch (Exception ex)
-        {
-            Plugin.Log.LogError($"Failed to apply to PEAKChoice: {ex}");
-        }
+        Plugin.Log.LogInfo($"Applying from network: Biome2={biome2 ?? "null"}, Biome3={biome3 ?? "null"}");
+        SelectedBiome2 = string.IsNullOrEmpty(biome2) ? null : biome2;
+        SelectedBiome3 = string.IsNullOrEmpty(biome3) ? null : biome3;
     }
 }
