@@ -2,6 +2,7 @@
 
 [![GitHub](https://img.shields.io/badge/GitHub-strangebasisdevs-181717?style=flat&logo=github&logoColor=white)](https://github.com/strangebasisdevs)
 [![YouTube](https://img.shields.io/badge/YouTube-strangebasis-FF0000?style=flat&logo=youtube&logoColor=white)](https://www.youtube.com/@strangebasis)
+[![Twitch](https://img.shields.io/badge/Twitch-strangebasis-9146FF?style=flat&logo=twitch&logoColor=white)](https://www.twitch.tv/strangebasis)
 [![Discord](https://img.shields.io/discord/132456789?label=Discord&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/UzRXpY7fXg)
 [![Bluesky](https://img.shields.io/badge/Bluesky-strangebasis.bsky.social-0085ff?style=flat&logo=bluesky&logoColor=white)](https://bsky.app/profile/strangebasis.bsky.social)
 [![Feeling Generous? Support me!](https://img.shields.io/badge/Donate-Streamlabs-31c48d?style=flat&logo=streamlabs&logoColor=white)](https://streamlabs.com/strangebasis1/tip)
