@@ -1,5 +1,11 @@
 # VacationPlanner 🏖️
 
+[![GitHub](https://img.shields.io/badge/GitHub-strangebasisdevs-181717?style=flat&logo=github&logoColor=white)](https://github.com/strangebasisdevs)
+[![YouTube](https://img.shields.io/badge/YouTube-strangebasis-FF0000?style=flat&logo=youtube&logoColor=white)](https://www.youtube.com/@strangebasis)
+[![Discord](https://img.shields.io/discord/132456789?label=Discord&logo=discord&logoColor=white&color=5865F2)](https://discord.gg/UzRXpY7fXg)
+[![Bluesky](https://img.shields.io/badge/Bluesky-strangebasis.bsky.social-0085ff?style=flat&logo=bluesky&logoColor=white)](https://bsky.app/profile/strangebasis.bsky.social)
+[![Feeling Generous? Support me!](https://img.shields.io/badge/Donate-Streamlabs-31c48d?style=flat&logo=streamlabs&logoColor=white)](https://streamlabs.com/strangebasis1/tip)
+
 **The simplest quality-of-life mod for coordinating your next adventure in PEAK.**
 
 Tired of loading into a biome nobody wanted? VacationPlanner brings democracy to the lobby! Vote on your preferred biome combinations with your friends in real-time, with zero configuration required.
@@ -38,6 +44,10 @@ Vote using either the **Numpad** or **Function Keys**:
 *   **Multiplayer**: All players should have the mod installed to vote and see the UI. If only the host has it, the host's selection will still apply to the game, but clients won't be able to vote. Most likely this will also cause terrain desync like with other terrain modifiers.
 *   **Terrain Randomizer**: This mod has **not** been tested with the Terrain Randomizer mod. Use together at your own risk!
 *   **PEAKChoice**: This mod lacks many features from similar mods, like PEAKChoice. This was designed specifically for multiplayer lobbies and ease of use without configuration files. *Rather than maintaining many mod profiles/configs, just set the destinations right before takeoff!*
+
+## 🆘 Support
+
+Please submit any issues to the **code** channel on my [Discord](https://discord.gg/UzRXpY7fXg) with as much detail as possible.
 
 ## 🛠️ Installation
 
