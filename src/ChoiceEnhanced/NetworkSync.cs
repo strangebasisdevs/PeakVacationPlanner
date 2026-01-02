@@ -1,40 +1,39 @@
+using System.Collections.Generic;
 using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
+using ChoiceEnhanced.Patches;
 
 namespace ChoiceEnhanced;
 
 /// <summary>
-/// Handles syncing biome selections from host to clients using Photon Room Custom Properties.
-/// Room properties persist and are automatically sent to joining players.
-/// 
-/// Simplified version - no longer syncs seeds (not needed without PEAKChoice).
+/// Handles syncing biome votes from all players using Photon Room Custom Properties.
+/// Each player can vote once per biome slot.
+/// Updates the LevelOverridePatch immediately based on current vote counts.
+/// Ties result in using the default biome (null override).
 /// </summary>
 public class NetworkSync : MonoBehaviourPunCallbacks
 {
-    // Room property keys for biome selection
-    private const string PROP_BIOME2 = "CE_Biome2";
-    private const string PROP_BIOME3 = "CE_Biome3";
-
+    // Room property keys for vote tracking
+    // Format: "CE_V2_{actorNumber}" = "T" or "R" for biome 2 votes
+    // Format: "CE_V3_{actorNumber}" = "A" or "M" for biome 3 votes
+    private const string VOTE_PREFIX_B2 = "CE_V2_";
+    private const string VOTE_PREFIX_B3 = "CE_V3_";
+    
     private static NetworkSync? _instance;
     private static bool _initialized;
 
-    /// <summary>
-    /// True if this client has received/read the host's biome selection from room properties.
-    /// </summary>
-    public static bool HasReceivedFromHost { get; private set; }
-
-    /// <summary>
-    /// The received biome2 selection ("T" for Tropics, "R" for Roots).
-    /// </summary>
-    public static string ReceivedBiome2 { get; private set; } = "";
-
-    /// <summary>
-    /// The received biome3 selection ("A" for Alpine, "M" for Mesa).
-    /// </summary>
-    public static string ReceivedBiome3 { get; private set; } = "";
-
+    // Vote counts (updated from room properties)
+    public static int VotesTropics { get; private set; }
+    public static int VotesRoots { get; private set; }
+    public static int VotesAlpine { get; private set; }
+    public static int VotesMesa { get; private set; }
+    
+    // Current player's votes
+    public static string? MyVoteBiome2 { get; private set; }
+    public static string? MyVoteBiome3 { get; private set; }
+    
     private void Awake()
     {
         if (_instance != null && _instance != this)
@@ -44,71 +43,111 @@ public class NetworkSync : MonoBehaviourPunCallbacks
         }
         _instance = this;
         _initialized = true;
-        Plugin.Log.LogInfo("NetworkSync initialized");
+        Plugin.Log.LogInfo("NetworkSync initialized (Continuous Voting System)");
     }
 
     /// <summary>
-    /// Called by host to store biome selection in room properties.
+    /// Submit a vote for biome 2 (Tropics vs Roots).
     /// </summary>
-    public static void SetRoomBiomeSelection()
+    public static void VoteForBiome2(string vote)
     {
-        if (!PhotonNetwork.InRoom)
-        {
-            Plugin.Log.LogWarning("Not in a room, cannot set biome properties");
-            return;
-        }
-
-        if (!PhotonNetwork.IsMasterClient)
-        {
-            Plugin.Log.LogInfo("Not master client, skipping room property set");
-            return;
-        }
-
-        string biome2 = BiomeController.SelectedBiome2 ?? "";
-        string biome3 = BiomeController.SelectedBiome3 ?? "";
-
-        var props = new Hashtable
-        {
-            { PROP_BIOME2, biome2 },
-            { PROP_BIOME3, biome3 }
-        };
-
+        if (!PhotonNetwork.InRoom) return;
+        if (vote != "T" && vote != "R") return;
+        
+        MyVoteBiome2 = vote;
+        string key = VOTE_PREFIX_B2 + PhotonNetwork.LocalPlayer.ActorNumber;
+        
+        var props = new Hashtable { { key, vote } };
         PhotonNetwork.CurrentRoom.SetCustomProperties(props);
-        Plugin.Log.LogInfo($"[HOST] Set room properties: Biome2={biome2}, Biome3={biome3}");
+        
+        Plugin.Log.LogInfo($"[VOTE] Biome2 vote submitted: {vote}");
     }
 
     /// <summary>
-    /// Called by clients to read biome selection from room properties.
+    /// Submit a vote for biome 3 (Alpine vs Mesa).
     /// </summary>
-    public static bool TryGetRoomBiomeSelection(out string biome2, out string biome3)
+    public static void VoteForBiome3(string vote)
     {
-        biome2 = "";
-        biome3 = "";
+        if (!PhotonNetwork.InRoom) return;
+        if (vote != "A" && vote != "M") return;
+        
+        MyVoteBiome3 = vote;
+        string key = VOTE_PREFIX_B3 + PhotonNetwork.LocalPlayer.ActorNumber;
+        
+        var props = new Hashtable { { key, vote } };
+        PhotonNetwork.CurrentRoom.SetCustomProperties(props);
+        
+        Plugin.Log.LogInfo($"[VOTE] Biome3 vote submitted: {vote}");
+    }
 
-        if (!PhotonNetwork.InRoom)
-            return false;
+    /// <summary>
+    /// Clear this player's votes.
+    /// </summary>
+    public static void ClearMyVotes()
+    {
+        if (!PhotonNetwork.InRoom) return;
+        
+        MyVoteBiome2 = null;
+        MyVoteBiome3 = null;
+        
+        string keyB2 = VOTE_PREFIX_B2 + PhotonNetwork.LocalPlayer.ActorNumber;
+        string keyB3 = VOTE_PREFIX_B3 + PhotonNetwork.LocalPlayer.ActorNumber;
+        
+        // Set to empty string to clear (Photon doesn't support removing keys easily)
+        var props = new Hashtable { { keyB2, "" }, { keyB3, "" } };
+        PhotonNetwork.CurrentRoom.SetCustomProperties(props);
+        
+        Plugin.Log.LogInfo("[VOTE] Cleared my votes");
+    }
 
+    /// <summary>
+    /// Count all votes from room properties and update the LevelOverridePatch immediately.
+    /// </summary>
+    public static void CountVotesAndUpdateOverride()
+    {
+        VotesTropics = 0;
+        VotesRoots = 0;
+        VotesAlpine = 0;
+        VotesMesa = 0;
+        
+        if (!PhotonNetwork.InRoom) return;
+        
         var props = PhotonNetwork.CurrentRoom.CustomProperties;
-
-        bool found = false;
-        if (props.TryGetValue(PROP_BIOME2, out object? biome2Obj))
+        
+        foreach (var kvp in props)
         {
-            biome2 = biome2Obj as string ?? "";
-            ReceivedBiome2 = biome2;
-            found = true;
+            string key = kvp.Key as string ?? "";
+            string value = kvp.Value as string ?? "";
+            
+            if (string.IsNullOrEmpty(value)) continue;
+            
+            if (key.StartsWith(VOTE_PREFIX_B2))
+            {
+                if (value == "T") VotesTropics++;
+                else if (value == "R") VotesRoots++;
+            }
+            else if (key.StartsWith(VOTE_PREFIX_B3))
+            {
+                if (value == "A") VotesAlpine++;
+                else if (value == "M") VotesMesa++;
+            }
         }
-
-        if (props.TryGetValue(PROP_BIOME3, out object? biome3Obj))
-        {
-            biome3 = biome3Obj as string ?? "";
-            ReceivedBiome3 = biome3;
-            found = true;
-        }
-
-        if (found)
-            HasReceivedFromHost = true;
-
-        return found;
+        
+        // Determine winners immediately
+        // If tied or zero votes, result is null (default behavior)
+        string? winnerB2 = null;
+        if (VotesTropics > VotesRoots) winnerB2 = "T";
+        else if (VotesRoots > VotesTropics) winnerB2 = "R";
+        
+        string? winnerB3 = null;
+        if (VotesAlpine > VotesMesa) winnerB3 = "A";
+        else if (VotesMesa > VotesAlpine) winnerB3 = "M";
+        
+        // Apply to patch immediately
+        LevelOverridePatch.DesiredBiome2 = winnerB2;
+        LevelOverridePatch.DesiredBiome3 = winnerB3;
+        
+        Plugin.Log.LogInfo($"[VOTE] Tally Updated: T:{VotesTropics} R:{VotesRoots} (Winner: {winnerB2 ?? "Default"}) | A:{VotesAlpine} M:{VotesMesa} (Winner: {winnerB3 ?? "Default"})");
     }
 
     /// <summary>
@@ -116,35 +155,8 @@ public class NetworkSync : MonoBehaviourPunCallbacks
     /// </summary>
     public override void OnRoomPropertiesUpdate(Hashtable propertiesThatChanged)
     {
-        Plugin.Log.LogInfo($"[CALLBACK] OnRoomPropertiesUpdate with {propertiesThatChanged.Count} properties");
-
-        bool updated = false;
-
-        if (propertiesThatChanged.TryGetValue(PROP_BIOME2, out object? biome2Obj))
-        {
-            ReceivedBiome2 = biome2Obj as string ?? "";
-            updated = true;
-            Plugin.Log.LogInfo($"[CALLBACK] Biome2 updated to: {ReceivedBiome2}");
-        }
-
-        if (propertiesThatChanged.TryGetValue(PROP_BIOME3, out object? biome3Obj))
-        {
-            ReceivedBiome3 = biome3Obj as string ?? "";
-            updated = true;
-            Plugin.Log.LogInfo($"[CALLBACK] Biome3 updated to: {ReceivedBiome3}");
-        }
-
-        if (updated)
-        {
-            HasReceivedFromHost = true;
-
-            // Apply on clients (not host - they set it)
-            if (!PhotonNetwork.IsMasterClient)
-            {
-                BiomeController.SetFromNetwork(ReceivedBiome2, ReceivedBiome3);
-                Plugin.Log.LogInfo($"[CALLBACK] Applied biome selection from host");
-            }
-        }
+        // Recount votes and update override whenever properties change
+        CountVotesAndUpdateOverride();
     }
 
     /// <summary>
@@ -153,35 +165,25 @@ public class NetworkSync : MonoBehaviourPunCallbacks
     public override void OnJoinedRoom()
     {
         Plugin.Log.LogInfo($"[CALLBACK] OnJoinedRoom - IsMasterClient={PhotonNetwork.IsMasterClient}");
-
-        if (!PhotonNetwork.IsMasterClient)
-        {
-            // Client joining - try to read host's biome selection
-            if (TryGetRoomBiomeSelection(out string biome2, out string biome3))
-            {
-                BiomeController.SetFromNetwork(biome2, biome3);
-            }
-        }
+        
+        // Count existing votes
+        CountVotesAndUpdateOverride();
+        
+        // Restore my votes if I had any (in case of rejoin/reconnect logic, though usually properties persist)
+        var roomProps = PhotonNetwork.CurrentRoom.CustomProperties;
+        string myB2Key = VOTE_PREFIX_B2 + PhotonNetwork.LocalPlayer.ActorNumber;
+        string myB3Key = VOTE_PREFIX_B3 + PhotonNetwork.LocalPlayer.ActorNumber;
+        
+        if (roomProps.TryGetValue(myB2Key, out object? b2) && b2 is string b2Str && !string.IsNullOrEmpty(b2Str))
+            MyVoteBiome2 = b2Str;
+        if (roomProps.TryGetValue(myB3Key, out object? b3) && b3 is string b3Str && !string.IsNullOrEmpty(b3Str))
+            MyVoteBiome3 = b3Str;
     }
 
     /// <summary>
     /// Check if networking is available.
     /// </summary>
     public static bool IsAvailable => _initialized && PhotonNetwork.InRoom;
-
-    /// <summary>
-    /// Check if we are the host/master client.
-    /// </summary>
-    public static bool IsHost => PhotonNetwork.IsMasterClient;
-
-    /// <summary>
-    /// Reset state for new game.
-    /// </summary>
-    public static void Reset()
-    {
-        HasReceivedFromHost = false;
-        ReceivedBiome2 = "";
-        ReceivedBiome3 = "";
-        Plugin.Log.LogInfo("NetworkSync state reset");
-    }
+    
+    public static bool IsMasterClient => PhotonNetwork.IsMasterClient;
 }
