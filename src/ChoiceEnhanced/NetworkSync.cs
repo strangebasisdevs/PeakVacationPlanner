@@ -3,6 +3,7 @@ using ExitGames.Client.Photon;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using ChoiceEnhanced.Patches;
 
 namespace ChoiceEnhanced;
@@ -43,7 +44,46 @@ public class NetworkSync : MonoBehaviourPunCallbacks
         }
         _instance = this;
         _initialized = true;
+        
+        // Reset local state on creation
+        MyVoteBiome2 = null;
+        MyVoteBiome3 = null;
+        
         Plugin.Log.LogInfo("NetworkSync initialized (Continuous Voting System)");
+    }
+
+    public override void OnEnable()
+    {
+        base.OnEnable();
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    public override void OnDisable()
+    {
+        base.OnDisable();
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // When returning to the Airport (lobby), clear votes so we can vote again for the new day
+        if (scene.name == "Airport")
+        {
+            Plugin.Log.LogInfo("[NetworkSync] Returned to Airport - Clearing votes");
+            
+            // Clear local state
+            MyVoteBiome2 = null;
+            MyVoteBiome3 = null;
+            
+            // Clear network state if connected (removes our vote from the room)
+            if (PhotonNetwork.InRoom)
+            {
+                ClearMyVotes();
+            }
+            
+            // Reset overrides
+            LevelOverridePatch.ClearOverrides();
+        }
     }
 
     /// <summary>
@@ -165,6 +205,9 @@ public class NetworkSync : MonoBehaviourPunCallbacks
     public override void OnJoinedRoom()
     {
         Plugin.Log.LogInfo($"[CALLBACK] OnJoinedRoom - IsMasterClient={PhotonNetwork.IsMasterClient}");
+        
+        // Clear local vote state from previous sessions
+        LevelOverridePatch.ClearOverrides();
         
         // Count existing votes
         CountVotesAndUpdateOverride();

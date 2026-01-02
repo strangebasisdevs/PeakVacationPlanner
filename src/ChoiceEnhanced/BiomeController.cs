@@ -22,6 +22,7 @@ public class BiomeController : MonoBehaviour
     private GUIStyle? _headerStyle;
     private GUIStyle? _voteStyle;
     private GUIStyle? _myVoteStyle;
+    private GUIStyle? _winnerStyle;
 
     /// <summary>
     /// Selected biome for slot 2 (Tropics vs Roots).
@@ -199,25 +200,33 @@ public class BiomeController : MonoBehaviour
             
             // Biome 2 votes
             string? myB2 = NetworkSync.MyVoteBiome2;
-            string tropicsMarker = myB2 == "T" ? " ←YOU" : "";
-            string rootsMarker = myB2 == "R" ? " ←YOU" : "";
+            int vT = NetworkSync.VotesTropics;
+            int vR = NetworkSync.VotesRoots;
+            string defB2 = GetDefaultBiome2();
+            bool tWin = vT > vR || (vT == vR && defB2 == "T");
+            bool rWin = vR > vT || (vR == vT && defB2 == "R");
+
+            string tMark = (myB2 == "T" ? " ←YOU" : "") + (tWin ? " ★" : "");
+            string rMark = (myB2 == "R" ? " ←YOU" : "") + (rWin ? " ★" : "");
             
-            GUILayout.Label($"  Tropics: {NetworkSync.VotesTropics}{tropicsMarker}", 
-                myB2 == "T" ? _myVoteStyle : _voteStyle);
-            GUILayout.Label($"  Roots:   {NetworkSync.VotesRoots}{rootsMarker}", 
-                myB2 == "R" ? _myVoteStyle : _voteStyle);
+            GUILayout.Label($"  Tropics: {vT}{tMark}", tWin ? _winnerStyle : (myB2 == "T" ? _myVoteStyle : _voteStyle));
+            GUILayout.Label($"  Roots:   {vR}{rMark}", rWin ? _winnerStyle : (myB2 == "R" ? _myVoteStyle : _voteStyle));
             
             GUILayout.Space(3);
             
             // Biome 3 votes
             string? myB3 = NetworkSync.MyVoteBiome3;
-            string alpineMarker = myB3 == "A" ? " ←YOU" : "";
-            string mesaMarker = myB3 == "M" ? " ←YOU" : "";
+            int vA = NetworkSync.VotesAlpine;
+            int vM = NetworkSync.VotesMesa;
+            string defB3 = GetDefaultBiome3();
+            bool aWin = vA > vM || (vA == vM && defB3 == "A");
+            bool mWin = vM > vA || (vM == vA && defB3 == "M");
+
+            string aMark = (myB3 == "A" ? " ←YOU" : "") + (aWin ? " ★" : "");
+            string mMark = (myB3 == "M" ? " ←YOU" : "") + (mWin ? " ★" : "");
             
-            GUILayout.Label($"  Alpine:  {NetworkSync.VotesAlpine}{alpineMarker}", 
-                myB3 == "A" ? _myVoteStyle : _voteStyle);
-            GUILayout.Label($"  Mesa:    {NetworkSync.VotesMesa}{mesaMarker}", 
-                myB3 == "M" ? _myVoteStyle : _voteStyle);
+            GUILayout.Label($"  Alpine:  {vA}{aMark}", aWin ? _winnerStyle : (myB3 == "A" ? _myVoteStyle : _voteStyle));
+            GUILayout.Label($"  Mesa:    {vM}{mMark}", mWin ? _winnerStyle : (myB3 == "M" ? _myVoteStyle : _voteStyle));
             
             GUILayout.Space(3);
             GUILayout.Label("(Ties use default)", _labelStyle);
@@ -266,6 +275,11 @@ public class BiomeController : MonoBehaviour
         _myVoteStyle = new GUIStyle(_labelStyle);
         _myVoteStyle.normal.textColor = new Color(0.5f, 1f, 0.5f);
         _myVoteStyle.fontStyle = FontStyle.Bold;
+
+        _winnerStyle = new GUIStyle(_labelStyle);
+        _winnerStyle.normal.textColor = new Color(1f, 0.84f, 0.0f); // Gold
+        _winnerStyle.fontStyle = FontStyle.Bold;
+        _winnerStyle.fontSize = 16; // Larger font
     }
 
     private static Texture2D MakeTex(int width, int height, Color col)
