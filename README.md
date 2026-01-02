@@ -1,6 +1,6 @@
-# ChoiceEnhanced
+# VacationPlanner
 
-Allow users to change the upcoming biomes in game.
+Allow users to vote on the upcoming biomes in the lobby.
 
 ### Thunderstore Packaging
 

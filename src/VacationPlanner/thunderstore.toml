@@ -6,14 +6,13 @@ repository = "https://thunderstore.io"
 
 [package]
 namespace = "strangebasisdevs"
-name = "ChoiceEnhanced"
-description = "Enhances Peak Choice with in World Biome Selection"
+name = "VacationPlanner"
+description = "Vote on biomes in the lobby."
 websiteUrl = "" # TODO: Add a link to your mod repository here (optional)
 containsNsfwContent = false
 
 [package.dependencies]
 BepInEx-BepInExPack_PEAK = "5.4.2403"
-DAa-PeakChoice = "1.3.1"
 
 [build]
 icon = "../../icon.png"
@@ -21,7 +20,7 @@ readme = "../../README.md"
 outdir = "../../artifacts/thunderstore/"
 
 [[build.copy]]
-source = "../../artifacts/bin/ChoiceEnhanced/release/com.github.strangebasis.ChoiceEnhanced.dll"
+source = "../../artifacts/bin/VacationPlanner/release/com.github.strangebasis.VacationPlanner.dll"
 target = "plugins/"
 
 [[build.copy]]

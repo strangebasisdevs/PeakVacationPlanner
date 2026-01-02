@@ -1,7 +1,7 @@
 using HarmonyLib;
 using Photon.Pun;
 
-namespace ChoiceEnhanced.Patches;
+namespace VacationPlanner.Patches;
 
 /// <summary>
 /// Patches game start to log the state of biome selection.

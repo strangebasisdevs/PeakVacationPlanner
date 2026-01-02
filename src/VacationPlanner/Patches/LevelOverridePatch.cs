@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using HarmonyLib;
 using Zorro.Core;
 
-namespace ChoiceEnhanced.Patches;
+namespace VacationPlanner.Patches;
 
 /// <summary>
 /// Overrides level selection to get desired biome combinations.

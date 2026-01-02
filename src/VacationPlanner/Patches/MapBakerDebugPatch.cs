@@ -1,6 +1,6 @@
 using HarmonyLib;
 
-namespace ChoiceEnhanced.Patches;
+namespace VacationPlanner.Patches;
 
 /// <summary>
 /// Debug patch to dump MapBaker data and understand biome structure.

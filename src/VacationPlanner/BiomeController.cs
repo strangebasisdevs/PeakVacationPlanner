@@ -1,10 +1,10 @@
-using ChoiceEnhanced.Patches;
+using VacationPlanner.Patches;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zorro.Core;
 
-namespace ChoiceEnhanced;
+namespace VacationPlanner;
 
 /// <summary>
 /// Handles runtime biome voting via numpad keys.

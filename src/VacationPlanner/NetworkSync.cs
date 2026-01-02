@@ -4,9 +4,9 @@ using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using ChoiceEnhanced.Patches;
+using VacationPlanner.Patches;
 
-namespace ChoiceEnhanced;
+namespace VacationPlanner;
 
 /// <summary>
 /// Handles syncing biome votes from all players using Photon Room Custom Properties.
@@ -17,10 +17,10 @@ namespace ChoiceEnhanced;
 public class NetworkSync : MonoBehaviourPunCallbacks
 {
     // Room property keys for vote tracking
-    // Format: "CE_V2_{actorNumber}" = "T" or "R" for biome 2 votes
-    // Format: "CE_V3_{actorNumber}" = "A" or "M" for biome 3 votes
-    private const string VOTE_PREFIX_B2 = "CE_V2_";
-    private const string VOTE_PREFIX_B3 = "CE_V3_";
+    // Format: "VP_V2_{actorNumber}" = "T" or "R" for biome 2 votes
+    // Format: "VP_V3_{actorNumber}" = "A" or "M" for biome 3 votes
+    private const string VOTE_PREFIX_B2 = "VP_V2_";
+    private const string VOTE_PREFIX_B3 = "VP_V3_";
     
     private static NetworkSync? _instance;
     private static bool _initialized;

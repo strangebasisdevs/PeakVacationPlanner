@@ -3,10 +3,10 @@ using BepInEx;
 using BepInEx.Logging;
 using UnityEngine;
 
-namespace ChoiceEnhanced;
+namespace VacationPlanner;
 
 /// <summary>
-/// ChoiceEnhanced - Override biome selection in PEAK.
+/// VacationPlanner - Override biome selection in PEAK.
 /// 
 /// Controls:
 /// - Numpad 1: Force Tropics
@@ -31,7 +31,7 @@ public partial class Plugin : BaseUnityPlugin
         _harmony.PatchAll(Assembly.GetExecutingAssembly());
 
         // Create persistent controller for input handling and network sync
-        var controllerObj = new GameObject("ChoiceEnhanced_Controller");
+        var controllerObj = new GameObject("VacationPlanner_Controller");
         controllerObj.AddComponent<BiomeController>();
         controllerObj.AddComponent<NetworkSync>();
         DontDestroyOnLoad(controllerObj);
