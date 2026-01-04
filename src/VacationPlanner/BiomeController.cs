@@ -87,7 +87,7 @@ public class BiomeController : MonoBehaviour
             kioskGO.transform.rotation = checkInKiosk.transform.rotation;
             
             // Scale up by 2x
-            kioskGO.transform.localScale = inviteKiosk.transform.localScale * 2.5f;
+            kioskGO.transform.localScale = inviteKiosk.transform.localScale * 2.3f;
             
             // Remove the invite friends script from the clone
             var oldScript = kioskGO.GetComponent<AirportInviteFriendsKiosk>();
@@ -100,7 +100,7 @@ public class BiomeController : MonoBehaviour
             kioskGO.AddComponent<BiomeVotingKiosk>();
             
             _spawnedKiosk = kioskGO;
-            Plugin.Log.LogInfo("BiomeVotingKiosk spawned in Airport (scaled 2.5x)!");
+            Plugin.Log.LogInfo("BiomeVotingKiosk spawned in Airport (scaled 2.3x)!");
         }
         else if (checkInKiosk != null)
         {
