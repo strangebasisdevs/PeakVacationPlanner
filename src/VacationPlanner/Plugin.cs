@@ -8,13 +8,8 @@ namespace VacationPlanner;
 /// <summary>
 /// VacationPlanner - Override biome selection in PEAK.
 /// 
-/// Controls:
-/// - Numpad 1: Force Tropics
-/// - Numpad 2: Force Roots
-/// - Numpad 4: Force Alpine
-/// - Numpad 5: Force Mesa
-/// - Numpad 0: Clear all overrides
-/// - Numpad Enter: Log current selection
+/// Players vote on biomes by interacting with the BiomeVoting Kiosk in the Airport.
+/// The winning biome combination is applied when the expedition starts.
 /// </summary>
 [BepInAutoPlugin]
 public partial class Plugin : BaseUnityPlugin
