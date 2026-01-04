@@ -59,6 +59,12 @@ public class BiomeController : MonoBehaviour
     private void Update()
     {
         UpdateDefaultBiomeInfo();
+        
+        // Press F10 to dump all textures in the scene
+        if (Input.GetKeyDown(KeyCode.F10))
+        {
+            DumpAllSceneTextures();
+        }
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -304,5 +310,61 @@ public class BiomeController : MonoBehaviour
         
         Plugin.Log.LogError($"Could not find custom texture at {filePath}");
         return null;
+    }
+
+    private void DumpAllSceneTextures()
+    {
+        Plugin.Log.LogInfo("=== DUMPING ALL SCENE TEXTURES ===");
+        
+        // Find all renderers in the entire scene
+        var allRenderers = Object.FindObjectsOfType<MeshRenderer>();
+        
+        Plugin.Log.LogInfo($"Found {allRenderers.Length} renderers in scene");
+        
+        foreach (var renderer in allRenderers)
+        {
+            Plugin.Log.LogInfo($"\nGameObject: {GetFullPath(renderer.gameObject)}");
+            
+            foreach (var material in renderer.sharedMaterials)
+            {
+                if (material != null)
+                {
+                    Plugin.Log.LogInfo($"  Material: {material.name}");
+                    Plugin.Log.LogInfo($"    Shader: {material.shader.name}");
+                    
+                    // Check all texture properties
+                    var shader = material.shader;
+                    for (int i = 0; i < shader.GetPropertyCount(); i++)
+                    {
+                        if (shader.GetPropertyType(i) == UnityEngine.Rendering.ShaderPropertyType.Texture)
+                        {
+                            string propName = shader.GetPropertyName(i);
+                            Texture tex = material.GetTexture(propName);
+                            if (tex != null)
+                            {
+                                Plugin.Log.LogInfo($"      [{propName}]: {tex.name} ({tex.width}x{tex.height})");
+                           }
+                        }
+                    }
+                }
+            }
+        }
+    
+        Plugin.Log.LogInfo("=== DUMP COMPLETE ===");
+    }
+
+// Helper to get full path in hierarchy
+    private string GetFullPath(GameObject obj)
+    {
+        string path = obj.name;
+        Transform parent = obj.transform.parent;
+        
+        while (parent != null)
+        {
+            path = parent.name + "/" + path;
+            parent = parent.parent;
+        }
+        
+        return path;
     }
 }
