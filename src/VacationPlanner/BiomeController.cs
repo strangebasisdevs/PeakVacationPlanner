@@ -20,6 +20,11 @@ public class BiomeController : MonoBehaviour
     
     // Reference to spawned kiosk
     private static GameObject? _spawnedKiosk;
+    
+    // Cached material and texture for performance
+    private static Material? _cachedSignMaterial = null;
+    private static bool _materialSearchComplete = false;
+    private static Texture2D? _cachedCustomTexture = null;
 
     /// <summary>
     /// Selected biome for slot 2 (Tropics vs Roots).
@@ -78,6 +83,13 @@ public class BiomeController : MonoBehaviour
         
         if (checkInKiosk != null && inviteKiosk != null)
         {
+            // Do discovery on the ORIGINAL kiosk (once)
+            if (!_materialSearchComplete)
+            {
+                FindAndCacheSignMaterial(inviteKiosk.gameObject, "Add Player Kiosk@4x");
+                _materialSearchComplete = true;
+            }
+            
             // Clone the invite friends kiosk (simple, not networked)
             var kioskGO = Instantiate(inviteKiosk.gameObject);
             kioskGO.name = "BiomeVotingKiosk";
@@ -86,8 +98,14 @@ public class BiomeController : MonoBehaviour
             kioskGO.transform.position = checkInKiosk.transform.position + checkInKiosk.transform.right * 3.0f;
             kioskGO.transform.rotation = checkInKiosk.transform.rotation;
             
-            // Scale up by 2x
+            // Scale up by 2.3x
             kioskGO.transform.localScale = inviteKiosk.transform.localScale * 2.3f;
+            
+            // Replace texture using cached reference (fast!)
+            if (_cachedSignMaterial != null)
+            {
+                ReplaceTextureOnClone(kioskGO);
+            }
             
             // Remove the invite friends script from the clone
             var oldScript = kioskGO.GetComponent<AirportInviteFriendsKiosk>();
@@ -185,5 +203,106 @@ public class BiomeController : MonoBehaviour
     {
         _defaultBiomeId = null;
         _defaultLevelIndex = -1;
+    }
+    
+    // --- Texture Replacement Methods ---
+    
+    private void FindAndCacheSignMaterial(GameObject originalKiosk, string targetTextureName)
+    {
+        Plugin.Log.LogInfo("Searching for sign material (one-time discovery)...");
+        
+        var renderers = originalKiosk.GetComponentsInChildren<MeshRenderer>();
+        
+        Plugin.Log.LogInfo($"Found {renderers.Length} renderers in kiosk");
+        
+        foreach (var renderer in renderers)
+        {
+            Plugin.Log.LogInfo($"Renderer: {renderer.name} has {renderer.sharedMaterials.Length} materials");
+            
+            foreach (var material in renderer.sharedMaterials)
+            {
+                if (material != null)
+                {
+                    Plugin.Log.LogInfo($"  Material: {material.name}, Shader: {material.shader.name}");
+                    Plugin.Log.LogInfo($"    mainTexture: {material.mainTexture?.name ?? "null"}");
+                    
+                    // Check ALL texture properties on the shader
+                    var shader = material.shader;
+                    int propertyCount = shader.GetPropertyCount();
+                    
+                    for (int i = 0; i < propertyCount; i++)
+                    {
+                        var propType = shader.GetPropertyType(i);
+                        if (propType == UnityEngine.Rendering.ShaderPropertyType.Texture)
+                        {
+                            string propName = shader.GetPropertyName(i);
+                            Texture tex = material.GetTexture(propName);
+                            Plugin.Log.LogInfo($"    [{propName}]: {tex?.name ?? "null"}");
+                            
+                            // Check if this is our target texture
+                            if (tex != null && tex.name == targetTextureName)
+                            {
+                                _cachedSignMaterial = material;
+                                _cachedTexturePropertyName = propName; // Store which property it's on
+                                Plugin.Log.LogInfo($"✓ FOUND: Material '{material.name}' property '{propName}' = '{targetTextureName}'");
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        Plugin.Log.LogWarning($"Could not find material with texture '{targetTextureName}'");
+    }
+    
+    private static string? _cachedTexturePropertyName = null;
+
+    private void ReplaceTextureOnClone(GameObject clonedKiosk)
+    {
+        if (_cachedSignMaterial == null || _cachedTexturePropertyName == null) return;
+        
+        var renderers = clonedKiosk.GetComponentsInChildren<MeshRenderer>();
+        
+        foreach (var renderer in renderers)
+        {
+            for (int i = 0; i < renderer.materials.Length; i++)
+            {
+                if (renderer.materials[i].shader == _cachedSignMaterial.shader &&
+                    renderer.materials[i].name.Contains(_cachedSignMaterial.name.Replace(" (Instance)", "")))
+                {
+                    Texture2D? customTexture = LoadCustomTexture();
+                    
+                    if (customTexture != null)
+                    {
+                        // Use the cached property name instead of mainTexture
+                        renderer.materials[i].SetTexture(_cachedTexturePropertyName, customTexture);
+                        Plugin.Log.LogInfo($"Texture replaced on clone (property: {_cachedTexturePropertyName})!");
+                    }
+                    return;
+                }
+            }
+        }
+    }
+    
+    private Texture2D? LoadCustomTexture()
+    {
+        if (_cachedCustomTexture != null)
+            return _cachedCustomTexture;
+        
+        // Load from BepInEx/plugins/VacationPlanner/custom_sign.png
+        string filePath = System.IO.Path.Combine(BepInEx.Paths.PluginPath, "VacationPlanner", "custom_sign.png");
+        
+        if (System.IO.File.Exists(filePath))
+        {
+            byte[] fileData = System.IO.File.ReadAllBytes(filePath);
+            _cachedCustomTexture = new Texture2D(2, 2);
+            _cachedCustomTexture.LoadImage(fileData);
+            Plugin.Log.LogInfo($"Custom texture loaded and cached from {filePath}");
+            return _cachedCustomTexture;
+        }
+        
+        Plugin.Log.LogError($"Could not find custom texture at {filePath}");
+        return null;
     }
 }
