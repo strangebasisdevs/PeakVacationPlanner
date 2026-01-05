@@ -17,32 +17,22 @@ Tired of loading into a biome nobody wanted? VacationPlanner brings democracy to
 *   **⚡ Instant Sync**: Votes are tallied instantly across the network. Everyone sees who voted for what and which biome is currently winning.
 *   **🤝 Zero Configuration**: Just install and play. No need to touch a single text file or restart the game to change your destination.
 *   **⚖️ Smart Tie-Breaking**: If the vote is tied (or nobody votes), the mod seamlessly defaults to the game's standard daily biome.
-*   **🎮 Controller Friendly**: (Well... keyboard friendly). Simple hotkeys to cast your vote.
+*   **🎮 User Friendly**: Interact with the in-game kiosk for easy voting. Controller support coming soon! Menu update is next priority!
 
 ## 🎮 Controls
 
-Vote using either the **Numpad** or **Function Keys**:
-
-| Biome | Numpad | F-Key |
-| :--- | :---: | :---: |
-| **Tropics** (Jungle) | `NumPad1` | `F5` |
-| **Roots** | `NumPad2` | `F6` |
-| **Alpine** (Snow) | `NumPad4` | `F7` |
-| **Mesa** (Desert) | `NumPad5` | `F8` |
-| **Clear Vote** | `NumPad0` | `F9` |
-
-*The UI in the top-left corner will show the current tally and the winning result.*
+Interact with the kiosk for a brand new menu. No more HUD elements; all the details are in the menu and starting to take shape within the airport. Look out for a sign to see your upcoming destinations!
 
 ## ❓ How it Works
 
 1.  **Join a Lobby**: The mod activates automatically when you are in the Airport.
-2.  **Cast Your Vote**: Press the keys corresponding to the biomes you want. You can vote for one "Slot 2" biome (Tropics/Roots) and one "Slot 3" biome (Alpine/Mesa).
+2.  **Vote on Destinations**: Approach the kiosk and use the menu to vote for your preferred biome combinations.
 3.  **The Party Decides**: The mod automatically calculates the winner based on all players' votes.
 4.  **Launch**: When the host starts the game, the level corresponding to the winning biome combination is loaded for everyone.
 
 ## ⚠️ Compatibility & Notes
 
-*   **Multiplayer**: All players should have the mod installed to vote and see the UI. If only the host has it, the host's selection will still apply to the game, but clients won't be able to vote. Most likely this will also cause terrain desync like with other terrain modifiers.
+*   **Multiplayer**: All players should have the mod installed to vote and share the personalized vacation experience. If only the host has it, the host's selection will still apply to the game, but clients won't be able to vote. Most likely this will also cause terrain desync like with other terrain modifiers.
 *   **Terrain Randomizer**: This mod has **not** been tested with the Terrain Randomizer mod. Use together at your own risk!
 *   **PEAKChoice**: This mod lacks many features from similar mods, like PEAKChoice. This was designed specifically for multiplayer lobbies and ease of use without configuration files. *Rather than maintaining many mod profiles/configs, just set the destinations right before takeoff!*
 

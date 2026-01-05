@@ -8,7 +8,7 @@
     <!-- This is the display name of your mod. Example: BepInEx Template -->
     <AssemblyTitle>VacationPlanner</AssemblyTitle>
     <!-- This is the version number of your mod. -->
-    <Version>1.0.0</Version>
+    <Version>2.0.0</Version>
   </PropertyGroup>
 
   <!--
@@ -27,9 +27,5 @@
   methods will be available at compile time for your code. You'll still
   need to add it as a dependency in your manifest.json, of course
   -->
-
-  <ItemGroup>
-    <PackageReference Include="DAa-PEAKNetworkingLibrary" Version="1.0.7" Private="False"/>
-  </ItemGroup>
 
 </Project>
