@@ -11,13 +11,34 @@
 
 Tired of loading into a biome nobody wanted? VacationPlanner brings democracy to the lobby! Vote on your preferred biome combinations with your friends in real-time, with zero configuration required.
 
+## Major Updates!
+
+- **Controller Support!🎮**
+- **No more clunky in-HUD user interface! Plan your vacation in world!**
+
+
+![Destination kiosk sign in background](https://i.postimg.cc/5JkbR3Q0/desintation-kiosk-sign-in-background.png)
+
+
+<details>
+<summary>More Screenshots!</summary>
+
+![Destination sign](https://i.postimg.cc/51YbdC8q/destination-sign.png)
+
+![Kiosk close-up](https://i.postimg.cc/2mbrRZn7/kiosk-close-up.png)
+
+![Voting menu](https://i.postimg.cc/PhpTsw-1W/voting-menu.png)
+
+</details>
+
+
 ## ✨ Features
 
 *   **🗳️ Multiplayer Voting System**: No more arguing in voice chat or editing config files. Vote for your desired biomes directly in the Airport lobby.
 *   **⚡ Instant Sync**: Votes are tallied instantly across the network. Everyone sees who voted for what and which biome is currently winning.
 *   **🤝 Zero Configuration**: Just install and play. No need to touch a single text file or restart the game to change your destination.
 *   **⚖️ Smart Tie-Breaking**: If the vote is tied (or nobody votes), the mod seamlessly defaults to the game's standard daily biome.
-*   **🎮 User Friendly**: Interact with the in-game kiosk for easy voting. Controller support coming soon! Menu update is next priority!
+*   **🎮 User Friendly**: Interact with the in-game kiosk for easy voting. Controllers supported!
 
 ## 🎮 Controls
 
@@ -36,9 +57,9 @@ Interact with the kiosk for a brand new menu. No more HUD elements; all the deta
 *   **Terrain Randomizer**: This mod has **not** been tested with the Terrain Randomizer mod. Use together at your own risk!
 *   **PEAKChoice**: This mod lacks many features from similar mods, like PEAKChoice. This was designed specifically for multiplayer lobbies and ease of use without configuration files. *Rather than maintaining many mod profiles/configs, just set the destinations right before takeoff!*
 
-## 🆘 Support
+## 🆘 Support or Feedback 💬
 
-Please submit any issues to the **code** channel on my [Discord](https://discord.gg/UzRXpY7fXg) with as much detail as possible.
+Please submit any issues to the **code** channel on my [Discord](https://discord.gg/UzRXpY7fXg) with as much detail as possible. Don't have discord? Reach out on [Bluesky](https://bsky.app/profile/strangebasis.bsky.social).
 
 ## 🛠️ Installation
 

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-01-05
+
+### Added
+- Added full controller support for the voting menu, including navigation with left stick, confirmation with A button, and subtle visual focus indicators.
+- Improved menu styling with refined hover and selection effects for better usability.
+
+### Changed
+- Enhanced input handling to detect and respond to controller vs. mouse/keyboard input schemes.
+
 ## [2.0.0] - 2026-01-05
 
 ### Added
