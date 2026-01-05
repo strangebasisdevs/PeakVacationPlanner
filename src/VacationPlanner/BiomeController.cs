@@ -375,8 +375,8 @@ public class BiomeController : MonoBehaviour
         if (_cachedCustomTexture != null)
             return _cachedCustomTexture;
         
-        // Load from BepInEx/plugins/VacationPlanner/custom_sign.png
-        string filePath = System.IO.Path.Combine(BepInEx.Paths.PluginPath, "VacationPlanner", "custom_sign.png");
+        // Load from BepInEx/plugins/VacationPlanner/kiosk_texture.png
+        string filePath = System.IO.Path.Combine(BepInEx.Paths.PluginPath, "VacationPlanner", "kiosk_texture.png");
         
         if (System.IO.File.Exists(filePath))
         {
@@ -396,7 +396,7 @@ public class BiomeController : MonoBehaviour
         Plugin.Log.LogInfo("=== DUMPING ALL SCENE TEXTURES ===");
         
         // Find all renderers in the entire scene
-        var allRenderers = Object.FindObjectsOfType<MeshRenderer>();
+        var allRenderers = Object.FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None);
         
         Plugin.Log.LogInfo($"Found {allRenderers.Length} renderers in scene");
         
