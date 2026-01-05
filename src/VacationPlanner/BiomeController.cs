@@ -26,12 +26,6 @@ public class BiomeController : MonoBehaviour
     private static bool _materialSearchComplete = false;
     private static Texture2D? _cachedCustomTexture = null;
     
-    // Cached material and texture for airport sign
-    private static Material? _cachedAirportSignMaterial = null;
-    private static string? _cachedAirportSignTexturePropertyName = null;
-    private static bool _airportSignSearchComplete = false;
-    private static Texture2D? _cachedAirportSignTexture = null;
-    
     // Stored placement information from numpad0 logging
     private static Vector3 _lastLoggedHitPoint = Vector3.zero;
     private static Vector3 _lastLoggedHitNormal = Vector3.up;
@@ -71,63 +65,67 @@ public class BiomeController : MonoBehaviour
     {
         UpdateDefaultBiomeInfo();
         
-        // Press Numpad0 to log screen position for overlay placement
-        if (Input.GetKeyDown(KeyCode.Keypad0))
-        {
-            LogScreenPositionForOverlay();
-        }
+        // // Uncomment the following block to enable overlay adjustment controls and object logging.
+        // // Specify which overlay to adjust (change this string to adjust different overlays)
+        // string currentOverlayName = "VotingInfoOverlay";
         
-        // Press Numpad1 to place overlay at last logged position
-        if (Input.GetKeyDown(KeyCode.Keypad1))
-        {
-            PlaceOverlayAtLoggedPosition();
-        }
+        // // Press Numpad0 to log screen position for overlay placement
+        // if (Input.GetKeyDown(KeyCode.Keypad0))
+        // {
+        //     LogScreenPositionForOverlay();
+        // }
         
-        // Adjust overlay size with numpad keys
-        if (Input.GetKeyDown(KeyCode.KeypadPlus))
-        {
-            AdjustOverlayScale(0.05f, 0f); // Wider
-        }
-        if (Input.GetKeyDown(KeyCode.KeypadMinus))
-        {
-            AdjustOverlayScale(-0.05f, 0f); // Narrower
-        }
-        if (Input.GetKeyDown(KeyCode.KeypadMultiply))
-        {
-            AdjustOverlayScale(0f, 0.05f); // Taller
-        }
-        if (Input.GetKeyDown(KeyCode.KeypadDivide))
-        {
-            AdjustOverlayScale(0f, -0.05f); // Shorter
-        }
+        // // Press Numpad1 to place overlay at last logged position
+        // if (Input.GetKeyDown(KeyCode.Keypad1))
+        // {
+        //     PlaceOverlayAtLoggedPosition(currentOverlayName);
+        // }
         
-        // Adjust overlay position with arrow keys and page up/down
-        float moveSpeed = 0.01f; // Adjust this value to change movement speed (in world units per key press)
+        // // Adjust overlay size with numpad keys
+        // if (Input.GetKeyDown(KeyCode.KeypadPlus))
+        // {
+        //     AdjustOverlayScale(currentOverlayName, 0.05f, 0f); // Wider
+        // }
+        // if (Input.GetKeyDown(KeyCode.KeypadMinus))
+        // {
+        //     AdjustOverlayScale(currentOverlayName, -0.05f, 0f); // Narrower
+        // }
+        // if (Input.GetKeyDown(KeyCode.KeypadMultiply))
+        // {
+        //     AdjustOverlayScale(currentOverlayName, 0f, 0.05f); // Taller
+        // }
+        // if (Input.GetKeyDown(KeyCode.KeypadDivide))
+        // {
+        //     AdjustOverlayScale(currentOverlayName, 0f, -0.05f); // Shorter
+        // }
         
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-        {
-            AdjustOverlayPosition(-moveSpeed, 0f, 0f); // Move left (negative X)
-        }
-        if (Input.GetKeyDown(KeyCode.RightArrow))
-        {
-            AdjustOverlayPosition(moveSpeed, 0f, 0f); // Move right (positive X)
-        }
-        if (Input.GetKeyDown(KeyCode.UpArrow))
-        {
-            AdjustOverlayPosition(0f, 0f, moveSpeed); // Move forward (positive Z)
-        }
-        if (Input.GetKeyDown(KeyCode.DownArrow))
-        {
-            AdjustOverlayPosition(0f, 0f, -moveSpeed); // Move backward (negative Z)
-        }
-        if (Input.GetKeyDown(KeyCode.PageUp))
-        {
-            AdjustOverlayPosition(0f, moveSpeed, 0f); // Move up (positive Y)
-        }
-        if (Input.GetKeyDown(KeyCode.PageDown))
-        {
-            AdjustOverlayPosition(0f, -moveSpeed, 0f); // Move down (negative Y)
-        }
+        // // Adjust overlay position with arrow keys and page up/down
+        // float moveSpeed = 0.01f; // Adjust this value to change movement speed (in world units per key press)
+        
+        // if (Input.GetKeyDown(KeyCode.LeftArrow))
+        // {
+        //     AdjustOverlayPosition(currentOverlayName, -moveSpeed, 0f, 0f); // Move left (negative X)
+        // }
+        // if (Input.GetKeyDown(KeyCode.RightArrow))
+        // {
+        //     AdjustOverlayPosition(currentOverlayName, moveSpeed, 0f, 0f); // Move right (positive X)
+        // }
+        // if (Input.GetKeyDown(KeyCode.UpArrow))
+        // {
+        //     AdjustOverlayPosition(currentOverlayName, 0f, 0f, moveSpeed); // Move forward (positive Z)
+        // }
+        // if (Input.GetKeyDown(KeyCode.DownArrow))
+        // {
+        //     AdjustOverlayPosition(currentOverlayName, 0f, 0f, -moveSpeed); // Move backward (negative Z)
+        // }
+        // if (Input.GetKeyDown(KeyCode.PageUp))
+        // {
+        //     AdjustOverlayPosition(currentOverlayName, 0f, moveSpeed, 0f); // Move up (positive Y)
+        // }
+        // if (Input.GetKeyDown(KeyCode.PageDown))
+        // {
+        //     AdjustOverlayPosition(currentOverlayName, 0f, -moveSpeed, 0f); // Move down (negative Y)
+        // }
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -164,11 +162,11 @@ public class BiomeController : MonoBehaviour
             kioskGO.name = "BiomeVotingKiosk";
             
             // Position it near the check-in kiosk
-            kioskGO.transform.position = checkInKiosk.transform.position + checkInKiosk.transform.right * 3.0f;
+            kioskGO.transform.position = checkInKiosk.transform.position + checkInKiosk.transform.up * 2.262f;
             kioskGO.transform.rotation = checkInKiosk.transform.rotation;
             
             // Scale up by 2.3x
-            kioskGO.transform.localScale = inviteKiosk.transform.localScale * 2.3f;
+            kioskGO.transform.localScale = inviteKiosk.transform.localScale * 2.2f;
             
             // Replace texture using cached reference (fast!)
             if (_cachedSignMaterial != null)
@@ -196,7 +194,7 @@ public class BiomeController : MonoBehaviour
         {
             // Fallback: create primitive if invite kiosk not found
             var kioskGO = new GameObject("BiomeVotingKiosk");
-            kioskGO.transform.position = checkInKiosk.transform.position + checkInKiosk.transform.right * 3.0f;
+            kioskGO.transform.position = checkInKiosk.transform.position - checkInKiosk.transform.forward * 3.0f;
             kioskGO.transform.rotation = checkInKiosk.transform.rotation;
             
             var meshGO = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -605,7 +603,7 @@ public class BiomeController : MonoBehaviour
         return null;
     }
     
-    private void PlaceOverlayAtLoggedPosition()
+    private void PlaceOverlayAtLoggedPosition(string overlayName)
     {
         if (!_hasLoggedPosition)
         {
@@ -614,11 +612,11 @@ public class BiomeController : MonoBehaviour
         }
         
         // Create or find the overlay quad
-        GameObject overlayGO = GameObject.Find("BiomeWorldOverlay");
+        GameObject overlayGO = GameObject.Find(overlayName);
         if (overlayGO == null)
         {
             overlayGO = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            overlayGO.name = "BiomeWorldOverlay";
+            overlayGO.name = overlayName;
             
             // Remove the default collider since we don't need interaction
             var collider = overlayGO.GetComponent<Collider>();
@@ -661,18 +659,18 @@ public class BiomeController : MonoBehaviour
             }
         }
         
-        Plugin.Log.LogInfo($"Overlay placed at logged position: {_lastLoggedHitPoint}, normal: {_lastLoggedHitNormal}");
+        Plugin.Log.LogInfo($"Overlay '{overlayName}' placed at logged position: {_lastLoggedHitPoint}, normal: {_lastLoggedHitNormal}");
         
         // Log the initial transform
         LogCurrentOverlayTransform(overlayGO.transform);
     }
     
-    private void AdjustOverlayScale(float widthDelta, float heightDelta)
+    private void AdjustOverlayScale(string overlayName, float widthDelta, float heightDelta)
     {
-        GameObject overlayGO = GameObject.Find("BiomeWorldOverlay");
+        GameObject overlayGO = GameObject.Find(overlayName);
         if (overlayGO == null)
         {
-            Plugin.Log.LogWarning("No overlay to adjust. Place one first with NUMPAD1.");
+            Plugin.Log.LogWarning($"No overlay '{overlayName}' to adjust. Place one first with NUMPAD1.");
             return;
         }
         
@@ -690,12 +688,12 @@ public class BiomeController : MonoBehaviour
         LogCurrentOverlayTransform(overlayGO.transform);
     }
     
-    private void AdjustOverlayPosition(float deltaX, float deltaY, float deltaZ)
+    private void AdjustOverlayPosition(string overlayName, float deltaX, float deltaY, float deltaZ)
     {
-        GameObject overlayGO = GameObject.Find("BiomeWorldOverlay");
+        GameObject overlayGO = GameObject.Find(overlayName);
         if (overlayGO == null)
         {
-            Plugin.Log.LogWarning("No overlay to adjust. Place one first with NUMPAD1.");
+            Plugin.Log.LogWarning($"No overlay '{overlayName}' to adjust. Place one first with NUMPAD1.");
             return;
         }
         
