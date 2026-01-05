@@ -32,8 +32,24 @@ source = "../../LICENSE"
 target = "/"
 
 [[build.copy]]
-source = "./art/"
-target = "/"
+source = "./art/kiosk_texture.png"
+target = "/kiosk_texture.png"
+
+[[build.copy]]
+source = "./art/roots_alpine_sign.png"
+target = "/roots_alpine_sign.png"
+
+[[build.copy]]
+source = "./art/roots_mesa_sign.png"
+target = "/roots_mesa_sign.png"
+
+[[build.copy]]
+source = "./art/tropics_alpine_sign.png"
+target = "/tropics_alpine_sign.png"
+
+[[build.copy]]
+source = "./art/tropics_mesa_sign.png"
+target = "/tropics_mesa_sign.png"
 
 # The following config options only apply when using TCLI to publish to Thunderstore directly:
 
