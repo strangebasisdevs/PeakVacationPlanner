@@ -21,7 +21,7 @@ outdir = "../../artifacts/thunderstore/"
 
 [[build.copy]]
 source = "../../artifacts/bin/VacationPlanner/release/com.github.strangebasis.VacationPlanner.dll"
-target = "plugins/"
+target = "/"
 
 [[build.copy]]
 source = "../../CHANGELOG.md"
@@ -29,6 +29,10 @@ target = "/"
 
 [[build.copy]]
 source = "../../LICENSE"
+target = "/"
+
+[[build.copy]]
+source = "./art/"
 target = "/"
 
 # The following config options only apply when using TCLI to publish to Thunderstore directly:

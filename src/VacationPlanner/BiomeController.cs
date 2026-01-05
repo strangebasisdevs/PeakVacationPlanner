@@ -375,8 +375,8 @@ public class BiomeController : MonoBehaviour
         if (_cachedCustomTexture != null)
             return _cachedCustomTexture;
         
-        // Load from BepInEx/plugins/VacationPlanner/kiosk_texture.png
-        string filePath = System.IO.Path.Combine(BepInEx.Paths.PluginPath, "VacationPlanner", "kiosk_texture.png");
+        // Load from BepInEx/plugins/strangebasisdevs-VacationPlanner/kiosk_texture.png
+        string filePath = System.IO.Path.Combine(BepInEx.Paths.PluginPath, "strangebasisdevs-VacationPlanner", "kiosk_texture.png");
         
         if (System.IO.File.Exists(filePath))
         {
@@ -587,8 +587,8 @@ public class BiomeController : MonoBehaviour
         string region2 = biome3 == "A" ? "alpine" : "mesa";
         string fileName = $"{region1}_{region2}_sign.png";
         
-        // Load from BepInEx/plugins/VacationPlanner/
-        string filePath = System.IO.Path.Combine(BepInEx.Paths.PluginPath, "VacationPlanner", fileName);
+        // Load from BepInEx/plugins/strangebasisdevs-VacationPlanner/
+        string filePath = System.IO.Path.Combine(BepInEx.Paths.PluginPath, "strangebasisdevs-VacationPlanner", fileName);
         
         if (System.IO.File.Exists(filePath))
         {
