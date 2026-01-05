@@ -269,13 +269,30 @@ public class BiomeController : MonoBehaviour
     }
     
     /// <summary>
-    /// Resets cached default biome info (call when returning to airport).
+    /// Updates the world space overlay texture to reflect current biome selections.
+    /// Call this when biome selections change.
     /// </summary>
-    public static void ResetDefaultCache()
+    public static void UpdateWorldSpaceOverlay()
     {
-        _defaultBiomeId = null;
-        _defaultLevelIndex = -1;
+        // Find the overlay and update its texture
+        GameObject overlayGO = GameObject.Find("BiomeWorldOverlay");
+        if (overlayGO != null)
+        {
+            var renderer = overlayGO.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                Texture2D? overlayTexture = LoadOverlayTexture();
+                if (overlayTexture != null)
+                {
+                    renderer.material.mainTexture = overlayTexture;
+                    renderer.material.SetTexture("_BaseMap", overlayTexture);
+                    Plugin.Log.LogInfo("Updated overlay texture to reflect new biome selection");
+                }
+            }
+        }
     }
+    
+    // --- Texture Replacement Methods ---
     
     private void FindAndCacheSignMaterial(GameObject originalKiosk, string targetTextureName)
     {
@@ -502,6 +519,7 @@ public class BiomeController : MonoBehaviour
     {
         // Create or find the overlay quad
         GameObject overlayGO = GameObject.Find("BiomeWorldOverlay");
+        bool wasExisting = overlayGO != null;
         if (overlayGO == null)
         {
             overlayGO = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -527,16 +545,26 @@ public class BiomeController : MonoBehaviour
             Texture2D? overlayTexture = LoadOverlayTexture();
             if (overlayTexture != null)
             {
-                // Create a material with the texture
-                var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                material.mainTexture = overlayTexture;
-                material.SetTexture("_BaseMap", overlayTexture);
-                
-                // Make it unlit and semi-transparent if desired
-                material.SetFloat("_Surface", 0); // Opaque
-                material.SetFloat("_Blend", 0); // Alpha blend
-                
-                renderer.material = material;
+                // If overlay already exists, just update the texture
+                if (wasExisting)
+                {
+                    renderer.material.mainTexture = overlayTexture;
+                    renderer.material.SetTexture("_BaseMap", overlayTexture);
+                    Plugin.Log.LogInfo("Updated existing overlay texture");
+                }
+                else
+                {
+                    // Create a material with the texture
+                    var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                    material.mainTexture = overlayTexture;
+                    material.SetTexture("_BaseMap", overlayTexture);
+                    
+                    // Make it unlit and semi-transparent if desired
+                    material.SetFloat("_Surface", 0); // Opaque
+                    material.SetFloat("_Blend", 0); // Alpha blend
+                    
+                    renderer.material = material;
+                }
             }
             else
             {
@@ -550,10 +578,19 @@ public class BiomeController : MonoBehaviour
         Plugin.Log.LogInfo($"World space overlay created covering airport sign at {overlayGO.transform.position}");
     }
     
-    private Texture2D? LoadOverlayTexture()
+    private static Texture2D? LoadOverlayTexture()
     {
-        // Load from BepInEx/plugins/VacationPlanner/overlay.png
-        string filePath = System.IO.Path.Combine(BepInEx.Paths.PluginPath, "VacationPlanner", "overlay.png");
+        // Determine current biome selections
+        string biome2 = LevelOverridePatch.DesiredBiome2?.ToUpper() ?? GetDefaultBiome2();
+        string biome3 = LevelOverridePatch.DesiredBiome3?.ToUpper() ?? GetDefaultBiome3();
+        
+        // Build filename: tropics_alpine_sign.png, etc.
+        string region1 = biome2 == "T" ? "tropics" : "roots";
+        string region2 = biome3 == "A" ? "alpine" : "mesa";
+        string fileName = $"{region1}_{region2}_sign.png";
+        
+        // Load from BepInEx/plugins/VacationPlanner/
+        string filePath = System.IO.Path.Combine(BepInEx.Paths.PluginPath, "VacationPlanner", fileName);
         
         if (System.IO.File.Exists(filePath))
         {

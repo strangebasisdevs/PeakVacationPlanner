@@ -187,6 +187,9 @@ public class NetworkSync : MonoBehaviourPunCallbacks
         LevelOverridePatch.DesiredBiome2 = winnerB2;
         LevelOverridePatch.DesiredBiome3 = winnerB3;
         
+        // Update the overlay to reflect the new winner
+        BiomeController.UpdateWorldSpaceOverlay();
+        
         Plugin.Log.LogInfo($"[VOTE] Tally Updated: T:{VotesTropics} R:{VotesRoots} (Winner: {winnerB2 ?? "Default"}) | A:{VotesAlpine} M:{VotesMesa} (Winner: {winnerB3 ?? "Default"})");
     }
 

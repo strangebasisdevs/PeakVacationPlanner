@@ -114,13 +114,21 @@ public class BiomeVotingMenu : MenuWindow
         if (GUILayout.Button("TROPICS", isTropicsSelected ? _selectedButtonStyle : _buttonStyle, GUILayout.Width(150), GUILayout.Height(35)))
         {
             if (inRoom) NetworkSync.VoteForBiome2("T");
-            else BiomeController.SelectedBiome2 = "T";
+            else 
+            {
+                BiomeController.SelectedBiome2 = "T";
+                BiomeController.UpdateWorldSpaceOverlay();
+            }
         }
         
         if (GUILayout.Button("ROOTS", isRootsSelected ? _selectedButtonStyle : _buttonStyle, GUILayout.Width(150), GUILayout.Height(35)))
         {
             if (inRoom) NetworkSync.VoteForBiome2("R");
-            else BiomeController.SelectedBiome2 = "R";
+            else 
+            {
+                BiomeController.SelectedBiome2 = "R";
+                BiomeController.UpdateWorldSpaceOverlay();
+            }
         }
         
         GUILayout.EndHorizontal();
@@ -148,13 +156,21 @@ public class BiomeVotingMenu : MenuWindow
         if (GUILayout.Button("ALPINE", isAlpineSelected ? _selectedButtonStyle : _buttonStyle, GUILayout.Width(150), GUILayout.Height(35)))
         {
             if (inRoom) NetworkSync.VoteForBiome3("A");
-            else BiomeController.SelectedBiome3 = "A";
+            else 
+            {
+                BiomeController.SelectedBiome3 = "A";
+                BiomeController.UpdateWorldSpaceOverlay();
+            }
         }
         
         if (GUILayout.Button("MESA", isMesaSelected ? _selectedButtonStyle : _buttonStyle, GUILayout.Width(150), GUILayout.Height(35)))
         {
             if (inRoom) NetworkSync.VoteForBiome3("M");
-            else BiomeController.SelectedBiome3 = "M";
+            else 
+            {
+                BiomeController.SelectedBiome3 = "M";
+                BiomeController.UpdateWorldSpaceOverlay();
+            }
         }
         
         GUILayout.EndHorizontal();
@@ -177,7 +193,11 @@ public class BiomeVotingMenu : MenuWindow
         if (GUILayout.Button("CLEAR", _buttonStyle, GUILayout.Width(150), GUILayout.Height(30)))
         {
             if (inRoom) NetworkSync.ClearMyVotes();
-            else LevelOverridePatch.ClearOverrides();
+            else 
+            {
+                LevelOverridePatch.ClearOverrides();
+                BiomeController.UpdateWorldSpaceOverlay();
+            }
         }
         
         if (GUILayout.Button("CLOSE", _buttonStyle, GUILayout.Width(150), GUILayout.Height(30)))
