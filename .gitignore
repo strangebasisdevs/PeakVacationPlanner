@@ -230,5 +230,9 @@ Config.Build.user.props
 # User Build Properties
 *.user.props
 
+# Local secrets (e.g. TCLI_AUTH_TOKEN for Thunderstore publishing)
+.env
+
 decomp/
 README_images/
+dev.note

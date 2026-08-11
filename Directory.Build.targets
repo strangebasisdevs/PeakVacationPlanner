@@ -43,6 +43,9 @@
   <!--
     Build Thunderstore package by calling `dotnet build -c Release -target:PackTS -v d` (verbosity detailed).
     Publish to Thunderstore by including `-property:PublishTS=true` in the command.
+
+    Secrets (e.g. TCLI_AUTH_TOKEN, needed only for publishing) are read from a `.env` file in the
+    solution root, if present - copy `.env.template` to `.env` and fill it in. `.env` is gitignored.
   -->
   <Target Name="PackTS" DependsOnTargets="Build" Condition="$(ThunderstorePackable) != 'false'">
     <Error
@@ -53,8 +56,19 @@
       <BuildArgument Condition="'$(PublishTS)' != 'true'">build</BuildArgument>
       <BuildArgument Condition="'$(PublishTS)' == 'true'">publish</BuildArgument>
     </PropertyGroup>
+
+    <ReadLinesFromFile File="$(SolutionRoot).env" Condition="Exists('$(SolutionRoot).env')">
+      <Output TaskParameter="Lines" ItemName="_EnvFileLine" />
+    </ReadLinesFromFile>
+    <ItemGroup Condition="Exists('$(SolutionRoot).env')">
+      <_EnvVar
+        Include="@(_EnvFileLine)"
+        Condition="'%(Identity)' != '' and !$([System.String]::Copy('%(Identity)').StartsWith('#')) and $([System.String]::Copy('%(Identity)').Contains('='))"
+      />
+    </ItemGroup>
+
     <Exec Command="dotnet tool restore" />
-    <Exec Command="dotnet tcli $(BuildArgument) --package-version $(Version)" />
+    <Exec Command="dotnet tcli $(BuildArgument) --package-version $(Version)" EnvironmentVariables="@(_EnvVar)" />
   </Target>
 
 </Project>

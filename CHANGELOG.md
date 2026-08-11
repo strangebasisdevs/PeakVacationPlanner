@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-08-11
+
+### Added
+- Added voting for the game's final biome branch, "Final Ascent" (Caldera + The Kiln vs. Gloom + The Citadel), alongside the existing Tropics/Roots and Alpine/Mesa votes.
+- Added clear tooltips explaining exactly why an itinerary can't be voted for right now (e.g. not baked into the current build at all, or not baked together with what another column is currently winning), instead of silently falling back to the closest available match.
+
+### Changed
+- Unavailable options are now labeled and disabled in the voting menu rather than being selectable but quietly redirected.
+
 ## [2.1.3] - 2026-02-13
 - Fixed the mod entirely. A peak update caused the levels not to load because a reference changed. I attempted to make the biome refrencing more dynamic to avoid needing to update this in the future (hopefully).
 
