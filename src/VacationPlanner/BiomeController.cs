@@ -51,6 +51,16 @@ public class BiomeController : MonoBehaviour
         set => LevelOverridePatch.DesiredBiome3 = value;
     }
 
+    /// <summary>
+    /// Selected biome for slot 4 (Caldera/Kiln vs Gloom/Citadel).
+    /// "V" for Volcano (Caldera + The Kiln), "S" for Swamp (Gloom + The Citadel), null for default.
+    /// </summary>
+    public static string? SelectedBiome4
+    {
+        get => LevelOverridePatch.DesiredBiome4;
+        set => LevelOverridePatch.DesiredBiome4 = value;
+    }
+
     private void OnEnable()
     {
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -247,11 +257,12 @@ public class BiomeController : MonoBehaviour
     {
         if (string.IsNullOrEmpty(biomeId)) return "Loading...";
         
-        // Only show biome 2 (Tropics/Roots) and biome 3 (Alpine/Mesa)
+        // Show biome 2 (Tropics/Roots), biome 3 (Alpine/Mesa) and biome 4 (Caldera+Kiln/Gloom+Citadel)
         string biome2 = biomeId.Contains('T') ? "Tropics" : "Roots";
         string biome3 = biomeId.Contains('A') ? "Alpine" : "Mesa";
+        string biome4 = biomeId[biomeId.Length - 1] == 'S' ? "Gloom + Citadel" : "Caldera + Kiln";
         
-        return $"{biome2} + {biome3}";
+        return $"{biome2} + {biome3} + {biome4}";
     }
 
     public static string GetDefaultBiome2()
@@ -264,6 +275,12 @@ public class BiomeController : MonoBehaviour
     {
         if (_defaultBiomeId == null) return "M";
         return _defaultBiomeId.Contains('A') ? "A" : "M";
+    }
+
+    public static string GetDefaultBiome4()
+    {
+        if (string.IsNullOrEmpty(_defaultBiomeId)) return "V";
+        return _defaultBiomeId[_defaultBiomeId.Length - 1] == 'S' ? "S" : "V";
     }
     
     /// <summary>

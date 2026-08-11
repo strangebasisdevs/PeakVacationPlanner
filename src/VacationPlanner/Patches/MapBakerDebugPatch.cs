@@ -17,6 +17,9 @@ public static class MapBakerDebugPatch
     [HarmonyPostfix]
     public static void GetLevel_Postfix(MapBaker __instance, int levelIndex, string __result)
     {
+        if (!Plugin.DebugLoggingEnabled)
+            return;
+
         if (!_hasDumped)
         {
             _hasDumped = true;
@@ -33,6 +36,9 @@ public static class MapBakerDebugPatch
     [HarmonyPostfix]
     public static void GetBiomeID_Postfix(MapBaker __instance, int levelIndex, string __result)
     {
+        if (!Plugin.DebugLoggingEnabled)
+            return;
+
         var actualIndex = levelIndex % __instance.BiomeIDs.Count;
         Plugin.Log.LogInfo($"[GetBiomeID] levelIndex={levelIndex} (actual={actualIndex}) => biomeID=\"{__result}\"");
     }
@@ -103,20 +109,42 @@ public static class MapBakerDebugPatch
             return "empty";
             
         var parts = new System.Collections.Generic.List<string>();
-        foreach (char c in biomeId)
+        for (int i = 0; i < biomeId.Length; i++)
         {
-            var name = c switch
+            char c = biomeId[i];
+            bool isFirst = i == 0;
+            bool isLast = i == biomeId.Length - 1;
+
+            string name;
+            if (isFirst && c == 'S')
             {
-                'S' => "Shore",
-                'T' => "Tropics",
-                'R' => "Roots",
-                'A' => "Alpine",
-                'M' => "Mesa",
-                'V' => "Volcano/Caldera",
-                'K' => "Kiln",
-                'P' => "Peak",
-                _ => $"UNRECOGNIZED_CHAR({c})"
-            };
+                // Slot 0 is always Shore
+                name = "Shore";
+            }
+            else if (isLast && c == 'S')
+            {
+                // Last slot 'S' means Swamp (Gloom + The Citadel), distinct from Shore
+                name = "Swamp/Gloom+Citadel";
+            }
+            else if (isLast && c == 'V')
+            {
+                // Last slot 'V' means Volcano (Caldera + The Kiln)
+                name = "Volcano/Caldera+Kiln";
+            }
+            else
+            {
+                name = c switch
+                {
+                    'T' => "Tropics",
+                    'R' => "Roots",
+                    'A' => "Alpine",
+                    'M' => "Mesa",
+                    'V' => "Volcano/Caldera",
+                    'K' => "Kiln",
+                    'P' => "Peak",
+                    _ => $"UNRECOGNIZED_CHAR({c})"
+                };
+            }
             parts.Add(name);
         }
         return string.Join(" + ", parts);

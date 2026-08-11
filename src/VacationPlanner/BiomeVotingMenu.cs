@@ -1,4 +1,5 @@
 using Photon.Pun;
+using System.Collections.Generic;
 using UnityEngine;
 using VacationPlanner.Patches;
 using Zorro.Core;
@@ -22,7 +23,9 @@ public class BiomeVotingMenu : MenuWindow
     private GUIStyle? _selectedButtonStyle;
     private GUIStyle? _voteStyle;
     private GUIStyle? _winnerStyle;
+    private GUIStyle? _tooltipStyle;
     private Texture2D? _borderTexture;
+    private Texture2D? _xTexture;
 
     // Controller navigation
     private int _selectedRow = 0;
@@ -73,6 +76,7 @@ public class BiomeVotingMenu : MenuWindow
     public override void OnOpen()
     {
         Plugin.Log.LogInfo("BiomeVotingMenu OnOpen - cursor should show now");
+        LevelOverridePatch.EnsureBiomeMapBuilt();
         _selectedRow = 0;
         _selectedCol = 0;
         _navigationCooldown = 0f;
@@ -126,7 +130,7 @@ public class BiomeVotingMenu : MenuWindow
                 }
                 else if (nav.y < -0.5f)
                 {
-                    _selectedRow = Mathf.Min(2, _selectedRow + 1); // 3 rows
+                    _selectedRow = Mathf.Min(3, _selectedRow + 1); // 4 rows
                     _navigationCooldown = NavigationDelay;
                 }
             }
@@ -143,12 +147,16 @@ public class BiomeVotingMenu : MenuWindow
     private void ExecuteSelectedButton()
     {
         bool inRoom = PhotonNetwork.InRoom;
+        string effB2 = GetEffectiveBiome2(inRoom);
+        string effB3 = GetEffectiveBiome3(inRoom);
+        string effB4 = GetEffectiveBiome4(inRoom);
 
         switch (_selectedRow)
         {
             case 0: // Jungle region
                 if (_selectedCol == 0) // Tropics
                 {
+                    if (!LevelOverridePatch.IsBiome2BranchAvailable("T", effB3, effB4)) break;
                     if (inRoom) NetworkSync.VoteForBiome2("T");
                     else 
                     {
@@ -158,6 +166,7 @@ public class BiomeVotingMenu : MenuWindow
                 }
                 else // Roots
                 {
+                    if (!LevelOverridePatch.IsBiome2BranchAvailable("R", effB3, effB4)) break;
                     if (inRoom) NetworkSync.VoteForBiome2("R");
                     else 
                     {
@@ -169,6 +178,7 @@ public class BiomeVotingMenu : MenuWindow
             case 1: // Mountain region
                 if (_selectedCol == 0) // Alpine
                 {
+                    if (!LevelOverridePatch.IsBiome3BranchAvailable("A", effB2, effB4)) break;
                     if (inRoom) NetworkSync.VoteForBiome3("A");
                     else 
                     {
@@ -178,6 +188,7 @@ public class BiomeVotingMenu : MenuWindow
                 }
                 else // Mesa
                 {
+                    if (!LevelOverridePatch.IsBiome3BranchAvailable("M", effB2, effB4)) break;
                     if (inRoom) NetworkSync.VoteForBiome3("M");
                     else 
                     {
@@ -186,7 +197,29 @@ public class BiomeVotingMenu : MenuWindow
                     }
                 }
                 break;
-            case 2: // Bottom row
+            case 2: // Final ascent region
+                if (_selectedCol == 0) // Caldera + Kiln
+                {
+                    if (!LevelOverridePatch.IsBiome4BranchAvailable("V", effB2, effB3)) break;
+                    if (inRoom) NetworkSync.VoteForBiome4("V");
+                    else 
+                    {
+                        BiomeController.SelectedBiome4 = "V";
+                        BiomeController.UpdateWorldSpaceOverlay();
+                    }
+                }
+                else // Gloom + Citadel
+                {
+                    if (!LevelOverridePatch.IsBiome4BranchAvailable("S", effB2, effB3)) break;
+                    if (inRoom) NetworkSync.VoteForBiome4("S");
+                    else 
+                    {
+                        BiomeController.SelectedBiome4 = "S";
+                        BiomeController.UpdateWorldSpaceOverlay();
+                    }
+                }
+                break;
+            case 3: // Bottom row
                 if (_selectedCol == 0) // Clear
                 {
                     if (inRoom) NetworkSync.ClearMyVotes();
@@ -207,6 +240,74 @@ public class BiomeVotingMenu : MenuWindow
     private GUIStyle GetButtonStyle(bool isVoted)
     {
         return isVoted ? _selectedButtonStyle! : _buttonStyle!;
+    }
+
+    /// <summary>
+    /// The branch currently winning the biome2 vote (or the active solo selection), falling back
+    /// to today's default on a tie/no vote. Never null - used to cross-check availability of the
+    /// other columns against what's actually leading right now.
+    /// </summary>
+    private static string GetEffectiveBiome2(bool inRoom)
+    {
+        if (inRoom)
+        {
+            int vT = NetworkSync.VotesTropics;
+            int vR = NetworkSync.VotesRoots;
+            if (vT > vR) return "T";
+            if (vR > vT) return "R";
+            return BiomeController.GetDefaultBiome2();
+        }
+        return BiomeController.SelectedBiome2 ?? BiomeController.GetDefaultBiome2();
+    }
+
+    private static string GetEffectiveBiome3(bool inRoom)
+    {
+        if (inRoom)
+        {
+            int vA = NetworkSync.VotesAlpine;
+            int vM = NetworkSync.VotesMesa;
+            if (vA > vM) return "A";
+            if (vM > vA) return "M";
+            return BiomeController.GetDefaultBiome3();
+        }
+        return BiomeController.SelectedBiome3 ?? BiomeController.GetDefaultBiome3();
+    }
+
+    private static string GetEffectiveBiome4(bool inRoom)
+    {
+        if (inRoom)
+        {
+            int vV = NetworkSync.VotesVolcano;
+            int vS = NetworkSync.VotesSwamp;
+            if (vV > vS) return "V";
+            if (vS > vV) return "S";
+            return BiomeController.GetDefaultBiome4();
+        }
+        return BiomeController.SelectedBiome4 ?? BiomeController.GetDefaultBiome4();
+    }
+
+    private static string FriendlyBiome2(string v) => v == "T" ? "Tropics" : "Roots";
+    private static string FriendlyBiome3(string v) => v == "A" ? "Alpine" : "Mesa";
+    private static string FriendlyBiome4(string v) => v == "V" ? "Volcano" : "Swamp";
+
+    /// <summary>
+    /// Builds a plain-language explanation of why a branch can't be voted for right now, for use
+    /// as a button hover tooltip. Distinguishes "not baked into this build at all" from "not baked
+    /// together with what's currently winning the other column(s)".
+    /// </summary>
+    private static string BuildUnavailableMessage(string friendlyName, LevelOverridePatch.BranchAvailability info, string otherALabel, string otherBLabel)
+    {
+        if (info.IsGloballyUnavailable)
+            return $"{friendlyName} is not available at all right now";
+
+        var blockers = new List<string>();
+        if (info.ChangingOtherAWouldHelp) blockers.Add(otherALabel);
+        if (info.ChangingOtherBWouldHelp) blockers.Add(otherBLabel);
+
+        if (blockers.Count == 0)
+            return $"{friendlyName} cannot be voted on with the current {otherALabel} + {otherBLabel} combination";
+
+        return $"{friendlyName} cannot be voted on until at least one of the following results changes: {string.Join(" and/or ", blockers)}";
     }
 
     private void OnInputSchemeChanged(InputScheme scheme)
@@ -232,11 +333,16 @@ public class BiomeVotingMenu : MenuWindow
 
         InitStyles();
 
+        // Unity does not clear GUI.tooltip automatically when the mouse moves off every control -
+        // it only gets overwritten by a control that's actually hovered this event. Reset it here so
+        // a stale tooltip from a previous frame doesn't linger once the mouse leaves the button.
+        GUI.tooltip = string.Empty;
+
         bool inRoom = PhotonNetwork.InRoom;
 
         // Center the box on screen
         float boxWidth = 400;
-        float boxHeight = inRoom ? 380 : 280;
+        float boxHeight = inRoom ? 465 : 345;
         float x = (Screen.width - boxWidth) / 2;
         float y = (Screen.height - boxHeight) / 2;
 
@@ -256,6 +362,13 @@ public class BiomeVotingMenu : MenuWindow
         GUI.Label(new Rect(contentX, contentY, contentWidth, 20), $"Today's Default: {defaultFriendly}", _labelStyle);
         contentY += 35;
 
+        // Current leader of each slot (recomputed every frame from live vote/selection state), used
+        // to gray out options in one column that aren't baked together with what's currently winning
+        // in the other columns - not just options that are unbaked in every combo.
+        string effB2 = GetEffectiveBiome2(inRoom);
+        string effB3 = GetEffectiveBiome3(inRoom);
+        string effB4 = GetEffectiveBiome4(inRoom);
+
         // Jungle region
         GUI.Label(new Rect(contentX, contentY, contentWidth, 20), "JUNGLE REGION:", _labelStyle);
         contentY += 25;
@@ -263,6 +376,10 @@ public class BiomeVotingMenu : MenuWindow
         string? myB2 = inRoom ? NetworkSync.MyVoteBiome2 : BiomeController.SelectedBiome2;
         bool isTropicsSelected = myB2 == "T";
         bool isRootsSelected = myB2 == "R";
+        var tropicsInfo = LevelOverridePatch.EvaluateBiome2Branch("T", effB3, effB4);
+        var rootsInfo = LevelOverridePatch.EvaluateBiome2Branch("R", effB3, effB4);
+        bool tropicsAvailable = tropicsInfo.IsAvailable;
+        bool rootsAvailable = rootsInfo.IsAvailable;
 
         Rect tropicsRect = new Rect(contentX, contentY, 150, 35);
         Rect rootsRect = new Rect(contentX + 160, contentY, 150, 35);
@@ -270,28 +387,40 @@ public class BiomeVotingMenu : MenuWindow
         bool tropicsHover = tropicsRect.Contains(Event.current.mousePosition);
         bool rootsHover = rootsRect.Contains(Event.current.mousePosition);
 
-if (GUI.Button(tropicsRect, "TROPICS", GetButtonStyle(isTropicsSelected)))
+        string tropicsTooltip = tropicsAvailable ? "" : BuildUnavailableMessage("Tropics", tropicsInfo, FriendlyBiome3(effB3), FriendlyBiome4(effB4));
+        GUIContent tropicsContent = new GUIContent("TROPICS", tropicsTooltip);
+if (GUI.Button(tropicsRect, tropicsContent, GetButtonStyle(isTropicsSelected)))
         {
-            if (inRoom) NetworkSync.VoteForBiome2("T");
-            else 
+            if (tropicsAvailable)
             {
-                BiomeController.SelectedBiome2 = "T";
-                BiomeController.UpdateWorldSpaceOverlay();
+                if (inRoom) NetworkSync.VoteForBiome2("T");
+                else 
+                {
+                    BiomeController.SelectedBiome2 = "T";
+                    BiomeController.UpdateWorldSpaceOverlay();
+                }
             }
         }
+        if (!tropicsAvailable) GUI.DrawTexture(tropicsRect, _xTexture);
 
         bool tropicsControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 0 && _selectedCol == 0;
         if (tropicsControllerSelected || (tropicsHover && !isTropicsSelected)) GUI.DrawTexture(tropicsRect, _borderTexture);
 
-        if (GUI.Button(rootsRect, "ROOTS", GetButtonStyle(isRootsSelected)))
+        string rootsTooltip = rootsAvailable ? "" : BuildUnavailableMessage("Roots", rootsInfo, FriendlyBiome3(effB3), FriendlyBiome4(effB4));
+        GUIContent rootsContent = new GUIContent("ROOTS", rootsTooltip);
+        if (GUI.Button(rootsRect, rootsContent, GetButtonStyle(isRootsSelected)))
         {
-            if (inRoom) NetworkSync.VoteForBiome2("R");
-            else 
+            if (rootsAvailable)
             {
-                BiomeController.SelectedBiome2 = "R";
-                BiomeController.UpdateWorldSpaceOverlay();
+                if (inRoom) NetworkSync.VoteForBiome2("R");
+                else 
+                {
+                    BiomeController.SelectedBiome2 = "R";
+                    BiomeController.UpdateWorldSpaceOverlay();
+                }
             }
         }
+        if (!rootsAvailable) GUI.DrawTexture(rootsRect, _xTexture);
 
         bool rootsControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 0 && _selectedCol == 1;
         if (rootsControllerSelected || (rootsHover && !isRootsSelected)) GUI.DrawTexture(rootsRect, _borderTexture);
@@ -320,6 +449,10 @@ if (GUI.Button(tropicsRect, "TROPICS", GetButtonStyle(isTropicsSelected)))
         string? myB3 = inRoom ? NetworkSync.MyVoteBiome3 : BiomeController.SelectedBiome3;
         bool isAlpineSelected = myB3 == "A";
         bool isMesaSelected = myB3 == "M";
+        var alpineInfo = LevelOverridePatch.EvaluateBiome3Branch("A", effB2, effB4);
+        var mesaInfo = LevelOverridePatch.EvaluateBiome3Branch("M", effB2, effB4);
+        bool alpineAvailable = alpineInfo.IsAvailable;
+        bool mesaAvailable = mesaInfo.IsAvailable;
 
         Rect alpineRect = new Rect(contentX, contentY, 150, 35);
         Rect mesaRect = new Rect(contentX + 160, contentY, 150, 35);
@@ -327,28 +460,40 @@ if (GUI.Button(tropicsRect, "TROPICS", GetButtonStyle(isTropicsSelected)))
         bool alpineHover = alpineRect.Contains(Event.current.mousePosition);
         bool mesaHover = mesaRect.Contains(Event.current.mousePosition);
 
-if (GUI.Button(alpineRect, "ALPINE", GetButtonStyle(isAlpineSelected)))
+        string alpineTooltip = alpineAvailable ? "" : BuildUnavailableMessage("Alpine", alpineInfo, FriendlyBiome2(effB2), FriendlyBiome4(effB4));
+        GUIContent alpineContent = new GUIContent("ALPINE", alpineTooltip);
+if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
         {
-            if (inRoom) NetworkSync.VoteForBiome3("A");
-            else 
+            if (alpineAvailable)
             {
-                BiomeController.SelectedBiome3 = "A";
-                BiomeController.UpdateWorldSpaceOverlay();
+                if (inRoom) NetworkSync.VoteForBiome3("A");
+                else 
+                {
+                    BiomeController.SelectedBiome3 = "A";
+                    BiomeController.UpdateWorldSpaceOverlay();
+                }
             }
         }
+        if (!alpineAvailable) GUI.DrawTexture(alpineRect, _xTexture);
 
         bool alpineControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 1 && _selectedCol == 0;
         if (alpineControllerSelected || (alpineHover && !isAlpineSelected)) GUI.DrawTexture(alpineRect, _borderTexture);
 
-        if (GUI.Button(mesaRect, "MESA", GetButtonStyle(isMesaSelected)))
+        string mesaTooltip = mesaAvailable ? "" : BuildUnavailableMessage("Mesa", mesaInfo, FriendlyBiome2(effB2), FriendlyBiome4(effB4));
+        GUIContent mesaContent = new GUIContent("MESA", mesaTooltip);
+        if (GUI.Button(mesaRect, mesaContent, GetButtonStyle(isMesaSelected)))
         {
-            if (inRoom) NetworkSync.VoteForBiome3("M");
-            else 
+            if (mesaAvailable)
             {
-                BiomeController.SelectedBiome3 = "M";
-                BiomeController.UpdateWorldSpaceOverlay();
+                if (inRoom) NetworkSync.VoteForBiome3("M");
+                else 
+                {
+                    BiomeController.SelectedBiome3 = "M";
+                    BiomeController.UpdateWorldSpaceOverlay();
+                }
             }
         }
+        if (!mesaAvailable) GUI.DrawTexture(mesaRect, _xTexture);
 
         bool mesaControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 1 && _selectedCol == 1;
         if (mesaControllerSelected || (mesaHover && !isMesaSelected)) GUI.DrawTexture(mesaRect, _borderTexture);
@@ -363,6 +508,80 @@ if (GUI.Button(alpineRect, "ALPINE", GetButtonStyle(isAlpineSelected)))
             bool aWin = vA > vM || (vA == vM && defB3 == "A");
             string winnerB3 = aWin ? "Alpine" : "Mesa";
             GUI.Label(new Rect(contentX, contentY, contentWidth, 20), $"  Votes: Alpine {vA} | Mesa {vM}  →  Winner: {winnerB3}", aWin && vA > 0 || !aWin && vM > 0 ? _winnerStyle : _voteStyle);
+            contentY += 25;
+        }
+        else
+        {
+            contentY += 15;
+        }
+
+        // Final ascent region
+        GUI.Label(new Rect(contentX, contentY, contentWidth, 20), "FINAL ASCENT:", _labelStyle);
+        contentY += 25;
+
+        string? myB4 = inRoom ? NetworkSync.MyVoteBiome4 : BiomeController.SelectedBiome4;
+        bool isVolcanoSelected = myB4 == "V";
+        bool isSwampSelected = myB4 == "S";
+        var volcanoInfo = LevelOverridePatch.EvaluateBiome4Branch("V", effB2, effB3);
+        var swampInfo = LevelOverridePatch.EvaluateBiome4Branch("S", effB2, effB3);
+        bool volcanoAvailable = volcanoInfo.IsAvailable;
+        bool swampAvailable = swampInfo.IsAvailable;
+
+        Rect volcanoRect = new Rect(contentX, contentY, 150, 35);
+        Rect swampRect = new Rect(contentX + 160, contentY, 150, 35);
+
+        bool volcanoHover = volcanoRect.Contains(Event.current.mousePosition);
+        bool swampHover = swampRect.Contains(Event.current.mousePosition);
+
+        string volcanoTooltip = volcanoAvailable ? "" : BuildUnavailableMessage("Volcano", volcanoInfo, FriendlyBiome2(effB2), FriendlyBiome3(effB3));
+        GUIContent volcanoContent = new GUIContent("VOLCANO", volcanoTooltip);
+        if (GUI.Button(volcanoRect, volcanoContent, GetButtonStyle(isVolcanoSelected)))
+        {
+            if (volcanoAvailable)
+            {
+                if (inRoom) NetworkSync.VoteForBiome4("V");
+                else 
+                {
+                    BiomeController.SelectedBiome4 = "V";
+                    BiomeController.UpdateWorldSpaceOverlay();
+                }
+            }
+        }
+        if (!volcanoAvailable) GUI.DrawTexture(volcanoRect, _xTexture);
+
+        bool volcanoControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 2 && _selectedCol == 0;
+        if (volcanoControllerSelected || (volcanoHover && !isVolcanoSelected)) GUI.DrawTexture(volcanoRect, _borderTexture);
+
+        string swampTooltip = swampAvailable ? "" : BuildUnavailableMessage("Swamp", swampInfo, FriendlyBiome2(effB2), FriendlyBiome3(effB3));
+        GUIContent swampContent = new GUIContent("SWAMP", swampTooltip);
+        if (GUI.Button(swampRect, swampContent, GetButtonStyle(isSwampSelected)))
+        {
+            if (swampAvailable)
+            {
+                if (inRoom) NetworkSync.VoteForBiome4("S");
+                else 
+                {
+                    BiomeController.SelectedBiome4 = "S";
+                    BiomeController.UpdateWorldSpaceOverlay();
+                }
+            }
+        }
+
+        if (!swampAvailable) GUI.DrawTexture(swampRect, _xTexture);
+
+        bool swampControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 2 && _selectedCol == 1;
+        if (swampControllerSelected || (swampHover && !isSwampSelected)) GUI.DrawTexture(swampRect, _borderTexture);
+
+        contentY += 40;
+
+        if (inRoom)
+        {
+            int vV = NetworkSync.VotesVolcano;
+            int vS = NetworkSync.VotesSwamp;
+            string defB4 = BiomeController.GetDefaultBiome4();
+            bool vWin = vV > vS || (vV == vS && defB4 == "V");
+            string winnerB4 = vWin ? "Volcano" : "Swamp";
+            GUI.Label(new Rect(contentX, contentY, contentWidth, 20), $"  Votes: Volcano {vV} | Swamp {vS}  →  Winner: {winnerB4}", vWin && vV > 0 || !vWin && vS > 0 ? _winnerStyle : _voteStyle);
             contentY += 25;
         }
         else
@@ -387,7 +606,7 @@ if (GUI.Button(clearRect, "CLEAR", GetButtonStyle(false)))
             }
         }
 
-        bool clearControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 2 && _selectedCol == 0;
+        bool clearControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 3 && _selectedCol == 0;
         if (clearControllerSelected || (clearHover && true)) GUI.DrawTexture(clearRect, _borderTexture);
 
         if (GUI.Button(closeRect, "CLOSE", GetButtonStyle(false)))
@@ -395,12 +614,30 @@ if (GUI.Button(clearRect, "CLEAR", GetButtonStyle(false)))
             Close();
         }
 
-        bool closeControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 2 && _selectedCol == 1;
+        bool closeControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 3 && _selectedCol == 1;
         if (closeControllerSelected || (closeHover && true)) GUI.DrawTexture(closeRect, _borderTexture);
 
         contentY += 35;
 
         GUI.Label(new Rect(contentX, contentY, contentWidth, 20), "Press ESC to close", _voteStyle);
+
+        // Floating tooltip explaining why a grayed-out/X'd option can't be voted on right now.
+        // GUI.tooltip is populated automatically by IMGUI whenever the mouse hovers a control
+        // that was drawn with a GUIContent carrying a non-empty tooltip string.
+        if (!string.IsNullOrEmpty(GUI.tooltip))
+        {
+            Vector2 mousePos = Event.current.mousePosition;
+            GUIContent tooltipContent = new GUIContent(GUI.tooltip);
+            float tooltipWidth = 240f;
+            float tooltipHeight = _tooltipStyle!.CalcHeight(tooltipContent, tooltipWidth);
+
+            float tooltipX = mousePos.x + 16;
+            float tooltipY = mousePos.y + 16;
+            if (tooltipX + tooltipWidth > Screen.width) tooltipX = Screen.width - tooltipWidth - 4;
+            if (tooltipY + tooltipHeight > Screen.height) tooltipY = Screen.height - tooltipHeight - 4;
+
+            GUI.Label(new Rect(tooltipX, tooltipY, tooltipWidth, tooltipHeight), tooltipContent, _tooltipStyle);
+        }
     }
 
     private void InitStyles()
@@ -443,6 +680,16 @@ if (GUI.Button(clearRect, "CLEAR", GetButtonStyle(false)))
         _winnerStyle.fontSize = 14;
         _winnerStyle.fontStyle = FontStyle.Bold;
         _winnerStyle.normal.textColor = new Color(1f, 0.84f, 0f);
+
+        _xTexture = MakeXTex(32, new Color(0.9f, 0.15f, 0.15f, 0.95f), 3);
+
+        _tooltipStyle = new GUIStyle(_labelStyle);
+        _tooltipStyle.fontSize = 13;
+        _tooltipStyle.fontStyle = FontStyle.Normal;
+        _tooltipStyle.normal.textColor = Color.white;
+        _tooltipStyle.wordWrap = true;
+        _tooltipStyle.padding = new RectOffset(6, 6, 4, 4);
+        _tooltipStyle.normal.background = MakeTex(2, 2, new Color(0.05f, 0.05f, 0.05f, 0.97f));
     }
 
     private static Texture2D MakeTex(int width, int height, Color col)
@@ -466,6 +713,33 @@ if (GUI.Button(clearRect, "CLEAR", GetButtonStyle(false)))
             pix[i] = isBorder ? borderCol : Color.clear;
         }
         Texture2D result = new Texture2D(width, height);
+        result.SetPixels(pix);
+        result.Apply();
+        return result;
+    }
+
+    /// <summary>
+    /// Draws a diagonal "X" (transparent everywhere else) - used to overlay disabled buttons so
+    /// unavailability reads visually at a glance, not just via a text suffix.
+    /// </summary>
+    private static Texture2D MakeXTex(int size, Color col, int thickness)
+    {
+        Color[] pix = new Color[size * size];
+        for (int i = 0; i < pix.Length; i++) pix[i] = Color.clear;
+
+        for (int x = 0; x < size; x++)
+        {
+            for (int t = -thickness; t <= thickness; t++)
+            {
+                int y1 = x + t;
+                if (y1 >= 0 && y1 < size) pix[y1 * size + x] = col;
+
+                int y2 = (size - 1 - x) + t;
+                if (y2 >= 0 && y2 < size) pix[y2 * size + x] = col;
+            }
+        }
+
+        Texture2D result = new Texture2D(size, size);
         result.SetPixels(pix);
         result.Apply();
         return result;
