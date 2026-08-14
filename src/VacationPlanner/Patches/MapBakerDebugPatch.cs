@@ -39,7 +39,11 @@ public static class MapBakerDebugPatch
         if (!Plugin.DebugLoggingEnabled)
             return;
 
-        var actualIndex = levelIndex % __instance.BiomeIDs.Count;
+        var biomeIds = __instance?.BiomeIDs;
+        if (biomeIds == null || biomeIds.Count == 0)
+            return;
+
+        var actualIndex = levelIndex % biomeIds.Count;
         Plugin.Log.LogInfo($"[GetBiomeID] levelIndex={levelIndex} (actual={actualIndex}) => biomeID=\"{__result}\"");
     }
 
