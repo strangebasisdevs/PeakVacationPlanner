@@ -61,8 +61,11 @@
       <Output TaskParameter="Lines" ItemName="_EnvFileLine" />
     </ReadLinesFromFile>
     <ItemGroup Condition="Exists('$(SolutionRoot).env')">
+      <_EnvFileLineTrim
+        Include="@(_EnvFileLine->Trim())"
+      />
       <_EnvVar
-        Include="@(_EnvFileLine)"
+        Include="@(_EnvFileLineTrim)"
         Condition="'%(Identity)' != '' and !$([System.String]::Copy('%(Identity)').StartsWith('#')) and $([System.String]::Copy('%(Identity)').Contains('='))"
       />
     </ItemGroup>
