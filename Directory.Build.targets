@@ -62,7 +62,7 @@
     </ReadLinesFromFile>
     <ItemGroup Condition="Exists('$(SolutionRoot).env')">
       <_EnvFileLineTrim
-        Include="@(_EnvFileLine->'$([System.String]::Copy('%(Identity)').Trim())')"
+        Include="@(_EnvFileLine->Trim())"
       />
       <_EnvVar
         Include="@(_EnvFileLineTrim)"
