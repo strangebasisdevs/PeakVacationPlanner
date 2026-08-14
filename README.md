@@ -13,6 +13,8 @@ Tired of loading into a biome nobody wanted? VacationPlanner brings democracy to
 
 ## Major Updates!
 
+- **Final Ascent voting!🌋** Vote on the game's last biome branch too! *Caldera + The Kiln* vs. *Gloom + The Citadel* right alongside your Tropics/Roots and Alpine/Mesa picks.
+- **No more silent fallbacks!** If an itinerary isn't available for your lobby's current votes, the menu now tells you clearly why (and what would need to change), instead of quietly swapping it for the closest match.
 - **Controller Support!🎮**
 - **No more clunky in-HUD user interface! Plan your vacation in world!**
 
@@ -38,6 +40,8 @@ Tired of loading into a biome nobody wanted? VacationPlanner brings democracy to
 *   **⚡ Instant Sync**: Votes are tallied instantly across the network. Everyone sees who voted for what and which biome is currently winning.
 *   **🤝 Zero Configuration**: Just install and play. No need to touch a single text file or restart the game to change your destination.
 *   **⚖️ Smart Tie-Breaking**: If the vote is tied (or nobody votes), the mod seamlessly defaults to the game's standard daily biome.
+*   **🗺️ Full Itinerary Coverage**: Vote on all three biome branches, including the final ascent (Caldera + The Kiln vs. Gloom + The Citadel).
+*   **💬 Clear Availability Info**: If a combination isn't achievable, the menu tells you exactly why instead of silently falling back to a different itinerary.
 *   **🎮 User Friendly**: Interact with the in-game kiosk for easy voting. Controllers supported!
 
 ## 🎮 Controls

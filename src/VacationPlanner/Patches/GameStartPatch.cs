@@ -19,6 +19,6 @@ public static class GameStartPatch
         Plugin.Log.LogInfo("[GameStartPatch] LoadIslandMaster starting...");
         
         // Just log the current state. The overrides should already be set by NetworkSync.
-        Plugin.Log.LogInfo($"[GameStartPatch] Overrides active: B2={LevelOverridePatch.DesiredBiome2 ?? "Default"}, B3={LevelOverridePatch.DesiredBiome3 ?? "Default"}");
+        Plugin.Log.LogInfo($"[GameStartPatch] Overrides active: B2={LevelOverridePatch.DesiredBiome2 ?? "Default"}, B3={LevelOverridePatch.DesiredBiome3 ?? "Default"}, B4={LevelOverridePatch.DesiredBiome4 ?? "Default"}");
     }
 }

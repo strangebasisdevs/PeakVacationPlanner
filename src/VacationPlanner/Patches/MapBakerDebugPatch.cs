@@ -17,6 +17,9 @@ public static class MapBakerDebugPatch
     [HarmonyPostfix]
     public static void GetLevel_Postfix(MapBaker __instance, int levelIndex, string __result)
     {
+        if (!Plugin.DebugLoggingEnabled)
+            return;
+
         if (!_hasDumped)
         {
             _hasDumped = true;
@@ -33,6 +36,9 @@ public static class MapBakerDebugPatch
     [HarmonyPostfix]
     public static void GetBiomeID_Postfix(MapBaker __instance, int levelIndex, string __result)
     {
+        if (!Plugin.DebugLoggingEnabled)
+            return;
+
         var actualIndex = levelIndex % __instance.BiomeIDs.Count;
         Plugin.Log.LogInfo($"[GetBiomeID] levelIndex={levelIndex} (actual={actualIndex}) => biomeID=\"{__result}\"");
     }
@@ -41,13 +47,13 @@ public static class MapBakerDebugPatch
     {
         Plugin.Log.LogInfo("=== MapBaker Data Dump ===");
         
-        // Dump AllLevels array
-        Plugin.Log.LogInfo($"AllLevels.Length = {baker.AllLevels?.Length ?? 0}");
-        if (baker.AllLevels != null)
+        // Dump ScenePaths array
+        Plugin.Log.LogInfo($"ScenePaths.Length = {baker.ScenePaths?.Length ?? 0}");
+        if (baker.ScenePaths != null)
         {
-            for (int i = 0; i < baker.AllLevels.Length; i++)
+            for (int i = 0; i < baker.ScenePaths.Length; i++)
             {
-                Plugin.Log.LogInfo($"  AllLevels[{i}] = \"{baker.AllLevels[i]}\"");
+                Plugin.Log.LogInfo($"  ScenePaths[{i}] = \"{baker.ScenePaths[i]}\"");
             }
         }
 
@@ -67,42 +73,26 @@ public static class MapBakerDebugPatch
 
         Plugin.Log.LogInfo("");
         
-        // Dump selectedBiomes list
+        // Dump selectedBiomes list (now carries biomeTypes + variantNames separately)
         Plugin.Log.LogInfo($"selectedBiomes.Count = {baker.selectedBiomes?.Count ?? 0}");
         if (baker.selectedBiomes != null)
         {
             for (int i = 0; i < baker.selectedBiomes.Count; i++)
             {
                 var result = baker.selectedBiomes[i];
-                var biomes = string.Join(", ", result.selectedBiomes);
-                Plugin.Log.LogInfo($"  selectedBiomes[{i}] = [{biomes}] => \"{result}\"");
+                var biomes = string.Join(", ", result.biomeTypes);
+                var variants = string.Join(", ", result.variantNames ?? new System.Collections.Generic.List<string>());
+                Plugin.Log.LogInfo($"  selectedBiomes[{i}] biomeTypes=[{biomes}] variantNames=[{variants}] => \"{result}\"");
             }
         }
 
         Plugin.Log.LogInfo("");
         
-        // Dump biomeSelection configuration
-        Plugin.Log.LogInfo($"biomeSelection.Count = {baker.biomeSelection?.Count ?? 0}");
-        if (baker.biomeSelection != null)
-        {
-            for (int i = 0; i < baker.biomeSelection.Count; i++)
-            {
-                var selection = baker.biomeSelection[i];
-                Plugin.Log.LogInfo($"  biomeSelection[{i}] options:");
-                foreach (var option in selection.biomeOptions)
-                {
-                    Plugin.Log.LogInfo($"    - {option.biome} (weight={option.weight}, maxInRow={option.preventMoreThanXInARow})");
-                }
-            }
-        }
-        
-        Plugin.Log.LogInfo("");
-        
-        // Check relationship between AllLevels and BiomeIDs
+        // Check relationship between ScenePaths and BiomeIDs
         Plugin.Log.LogInfo("=== Level/Biome Correlation ===");
-        var levelCount = baker.AllLevels?.Length ?? 0;
+        var levelCount = baker.ScenePaths?.Length ?? 0;
         var biomeCount = baker.BiomeIDs?.Count ?? 0;
-        Plugin.Log.LogInfo($"AllLevels has {levelCount} entries, BiomeIDs has {biomeCount} entries");
+        Plugin.Log.LogInfo($"ScenePaths has {levelCount} entries, BiomeIDs has {biomeCount} entries");
         
         if (levelCount > 0 && biomeCount > 0)
         {
@@ -119,19 +109,42 @@ public static class MapBakerDebugPatch
             return "empty";
             
         var parts = new System.Collections.Generic.List<string>();
-        foreach (char c in biomeId)
+        for (int i = 0; i < biomeId.Length; i++)
         {
-            var name = c switch
+            char c = biomeId[i];
+            bool isFirst = i == 0;
+            bool isLast = i == biomeId.Length - 1;
+
+            string name;
+            if (isFirst && c == 'S')
             {
-                'S' => "Shore",
-                'T' => "Tropics",
-                'R' => "Roots",
-                'A' => "Alpine",
-                'M' => "Mesa",
-                'V' or 'K' => "Kiln/Volcano",
-                'P' => "Peak",
-                _ => $"Unknown({c})"
-            };
+                // Slot 0 is always Shore
+                name = "Shore";
+            }
+            else if (isLast && c == 'S')
+            {
+                // Last slot 'S' means Swamp (Gloom + The Citadel), distinct from Shore
+                name = "Swamp/Gloom+Citadel";
+            }
+            else if (isLast && c == 'V')
+            {
+                // Last slot 'V' means Volcano (Caldera + The Kiln)
+                name = "Volcano/Caldera+Kiln";
+            }
+            else
+            {
+                name = c switch
+                {
+                    'T' => "Tropics",
+                    'R' => "Roots",
+                    'A' => "Alpine",
+                    'M' => "Mesa",
+                    'V' => "Volcano/Caldera",
+                    'K' => "Kiln",
+                    'P' => "Peak",
+                    _ => $"UNRECOGNIZED_CHAR({c})"
+                };
+            }
             parts.Add(name);
         }
         return string.Join(" + ", parts);

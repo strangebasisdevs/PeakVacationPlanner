@@ -19,8 +19,10 @@ public class NetworkSync : MonoBehaviourPunCallbacks
     // Room property keys for vote tracking
     // Format: "VP_V2_{actorNumber}" = "T" or "R" for biome 2 votes
     // Format: "VP_V3_{actorNumber}" = "A" or "M" for biome 3 votes
+    // Format: "VP_V4_{actorNumber}" = "V" or "S" for biome 4 votes
     private const string VOTE_PREFIX_B2 = "VP_V2_";
     private const string VOTE_PREFIX_B3 = "VP_V3_";
+    private const string VOTE_PREFIX_B4 = "VP_V4_";
     
     private static NetworkSync? _instance;
     private static bool _initialized;
@@ -30,10 +32,13 @@ public class NetworkSync : MonoBehaviourPunCallbacks
     public static int VotesRoots { get; private set; }
     public static int VotesAlpine { get; private set; }
     public static int VotesMesa { get; private set; }
+    public static int VotesVolcano { get; private set; }
+    public static int VotesSwamp { get; private set; }
     
     // Current player's votes
     public static string? MyVoteBiome2 { get; private set; }
     public static string? MyVoteBiome3 { get; private set; }
+    public static string? MyVoteBiome4 { get; private set; }
     
     private void Awake()
     {
@@ -48,6 +53,7 @@ public class NetworkSync : MonoBehaviourPunCallbacks
         // Reset local state on creation
         MyVoteBiome2 = null;
         MyVoteBiome3 = null;
+        MyVoteBiome4 = null;
         
         Plugin.Log.LogInfo("NetworkSync initialized (Continuous Voting System)");
     }
@@ -74,6 +80,7 @@ public class NetworkSync : MonoBehaviourPunCallbacks
             // Clear local state
             MyVoteBiome2 = null;
             MyVoteBiome3 = null;
+            MyVoteBiome4 = null;
             
             // Clear network state if connected (removes our vote from the room)
             if (PhotonNetwork.InRoom)
@@ -121,6 +128,23 @@ public class NetworkSync : MonoBehaviourPunCallbacks
     }
 
     /// <summary>
+    /// Submit a vote for biome 4 (Caldera/Kiln vs Gloom/Citadel).
+    /// </summary>
+    public static void VoteForBiome4(string vote)
+    {
+        if (!PhotonNetwork.InRoom) return;
+        if (vote != "V" && vote != "S") return;
+        
+        MyVoteBiome4 = vote;
+        string key = VOTE_PREFIX_B4 + PhotonNetwork.LocalPlayer.ActorNumber;
+        
+        var props = new Hashtable { { key, vote } };
+        PhotonNetwork.CurrentRoom.SetCustomProperties(props);
+        
+        Plugin.Log.LogInfo($"[VOTE] Biome4 vote submitted: {vote}");
+    }
+
+    /// <summary>
     /// Clear this player's votes.
     /// </summary>
     public static void ClearMyVotes()
@@ -129,12 +153,14 @@ public class NetworkSync : MonoBehaviourPunCallbacks
         
         MyVoteBiome2 = null;
         MyVoteBiome3 = null;
+        MyVoteBiome4 = null;
         
         string keyB2 = VOTE_PREFIX_B2 + PhotonNetwork.LocalPlayer.ActorNumber;
         string keyB3 = VOTE_PREFIX_B3 + PhotonNetwork.LocalPlayer.ActorNumber;
+        string keyB4 = VOTE_PREFIX_B4 + PhotonNetwork.LocalPlayer.ActorNumber;
         
         // Set to empty string to clear (Photon doesn't support removing keys easily)
-        var props = new Hashtable { { keyB2, "" }, { keyB3, "" } };
+        var props = new Hashtable { { keyB2, "" }, { keyB3, "" }, { keyB4, "" } };
         PhotonNetwork.CurrentRoom.SetCustomProperties(props);
         
         Plugin.Log.LogInfo("[VOTE] Cleared my votes");
@@ -149,6 +175,8 @@ public class NetworkSync : MonoBehaviourPunCallbacks
         VotesRoots = 0;
         VotesAlpine = 0;
         VotesMesa = 0;
+        VotesVolcano = 0;
+        VotesSwamp = 0;
         
         if (!PhotonNetwork.InRoom) return;
         
@@ -171,6 +199,11 @@ public class NetworkSync : MonoBehaviourPunCallbacks
                 if (value == "A") VotesAlpine++;
                 else if (value == "M") VotesMesa++;
             }
+            else if (key.StartsWith(VOTE_PREFIX_B4))
+            {
+                if (value == "V") VotesVolcano++;
+                else if (value == "S") VotesSwamp++;
+            }
         }
         
         // Determine winners immediately
@@ -183,14 +216,19 @@ public class NetworkSync : MonoBehaviourPunCallbacks
         if (VotesAlpine > VotesMesa) winnerB3 = "A";
         else if (VotesMesa > VotesAlpine) winnerB3 = "M";
         
+        string? winnerB4 = null;
+        if (VotesVolcano > VotesSwamp) winnerB4 = "V";
+        else if (VotesSwamp > VotesVolcano) winnerB4 = "S";
+        
         // Apply to patch immediately
         LevelOverridePatch.DesiredBiome2 = winnerB2;
         LevelOverridePatch.DesiredBiome3 = winnerB3;
+        LevelOverridePatch.DesiredBiome4 = winnerB4;
         
         // Update the overlay to reflect the new winner
         BiomeController.UpdateWorldSpaceOverlay();
         
-        Plugin.Log.LogInfo($"[VOTE] Tally Updated: T:{VotesTropics} R:{VotesRoots} (Winner: {winnerB2 ?? "Default"}) | A:{VotesAlpine} M:{VotesMesa} (Winner: {winnerB3 ?? "Default"})");
+        Plugin.Log.LogInfo($"[VOTE] Tally Updated: T:{VotesTropics} R:{VotesRoots} (Winner: {winnerB2 ?? "Default"}) | A:{VotesAlpine} M:{VotesMesa} (Winner: {winnerB3 ?? "Default"}) | V:{VotesVolcano} S:{VotesSwamp} (Winner: {winnerB4 ?? "Default"})");
     }
 
     /// <summary>
@@ -219,11 +257,14 @@ public class NetworkSync : MonoBehaviourPunCallbacks
         var roomProps = PhotonNetwork.CurrentRoom.CustomProperties;
         string myB2Key = VOTE_PREFIX_B2 + PhotonNetwork.LocalPlayer.ActorNumber;
         string myB3Key = VOTE_PREFIX_B3 + PhotonNetwork.LocalPlayer.ActorNumber;
+        string myB4Key = VOTE_PREFIX_B4 + PhotonNetwork.LocalPlayer.ActorNumber;
         
         if (roomProps.TryGetValue(myB2Key, out object? b2) && b2 is string b2Str && !string.IsNullOrEmpty(b2Str))
             MyVoteBiome2 = b2Str;
         if (roomProps.TryGetValue(myB3Key, out object? b3) && b3 is string b3Str && !string.IsNullOrEmpty(b3Str))
             MyVoteBiome3 = b3Str;
+        if (roomProps.TryGetValue(myB4Key, out object? b4) && b4 is string b4Str && !string.IsNullOrEmpty(b4Str))
+            MyVoteBiome4 = b4Str;
     }
 
     /// <summary>
