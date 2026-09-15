@@ -389,7 +389,9 @@ public class BiomeVotingMenu : MenuWindow
 
         string tropicsTooltip = tropicsAvailable ? "" : BuildUnavailableMessage("Tropics", tropicsInfo, FriendlyBiome3(effB3), FriendlyBiome4(effB4));
         GUIContent tropicsContent = new GUIContent("TROPICS", tropicsTooltip);
-if (GUI.Button(tropicsRect, tropicsContent, GetButtonStyle(isTropicsSelected)))
+        bool wasGuiEnabled = GUI.enabled;
+        GUI.enabled = tropicsAvailable;
+        if (GUI.Button(tropicsRect, tropicsContent, GetButtonStyle(isTropicsSelected)))
         {
             if (tropicsAvailable)
             {
@@ -401,6 +403,7 @@ if (GUI.Button(tropicsRect, tropicsContent, GetButtonStyle(isTropicsSelected)))
                 }
             }
         }
+        GUI.enabled = wasGuiEnabled;
         if (!tropicsAvailable) GUI.DrawTexture(tropicsRect, _xTexture);
 
         bool tropicsControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 0 && _selectedCol == 0;
@@ -408,6 +411,8 @@ if (GUI.Button(tropicsRect, tropicsContent, GetButtonStyle(isTropicsSelected)))
 
         string rootsTooltip = rootsAvailable ? "" : BuildUnavailableMessage("Roots", rootsInfo, FriendlyBiome3(effB3), FriendlyBiome4(effB4));
         GUIContent rootsContent = new GUIContent("ROOTS", rootsTooltip);
+        wasGuiEnabled = GUI.enabled;
+        GUI.enabled = rootsAvailable;
         if (GUI.Button(rootsRect, rootsContent, GetButtonStyle(isRootsSelected)))
         {
             if (rootsAvailable)
@@ -420,6 +425,7 @@ if (GUI.Button(tropicsRect, tropicsContent, GetButtonStyle(isTropicsSelected)))
                 }
             }
         }
+        GUI.enabled = wasGuiEnabled;
         if (!rootsAvailable) GUI.DrawTexture(rootsRect, _xTexture);
 
         bool rootsControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 0 && _selectedCol == 1;
@@ -462,7 +468,9 @@ if (GUI.Button(tropicsRect, tropicsContent, GetButtonStyle(isTropicsSelected)))
 
         string alpineTooltip = alpineAvailable ? "" : BuildUnavailableMessage("Alpine", alpineInfo, FriendlyBiome2(effB2), FriendlyBiome4(effB4));
         GUIContent alpineContent = new GUIContent("ALPINE", alpineTooltip);
-if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
+        wasGuiEnabled = GUI.enabled;
+        GUI.enabled = alpineAvailable;
+        if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
         {
             if (alpineAvailable)
             {
@@ -474,6 +482,7 @@ if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
                 }
             }
         }
+        GUI.enabled = wasGuiEnabled;
         if (!alpineAvailable) GUI.DrawTexture(alpineRect, _xTexture);
 
         bool alpineControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 1 && _selectedCol == 0;
@@ -481,6 +490,8 @@ if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
 
         string mesaTooltip = mesaAvailable ? "" : BuildUnavailableMessage("Mesa", mesaInfo, FriendlyBiome2(effB2), FriendlyBiome4(effB4));
         GUIContent mesaContent = new GUIContent("MESA", mesaTooltip);
+        wasGuiEnabled = GUI.enabled;
+        GUI.enabled = mesaAvailable;
         if (GUI.Button(mesaRect, mesaContent, GetButtonStyle(isMesaSelected)))
         {
             if (mesaAvailable)
@@ -493,6 +504,7 @@ if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
                 }
             }
         }
+        GUI.enabled = wasGuiEnabled;
         if (!mesaAvailable) GUI.DrawTexture(mesaRect, _xTexture);
 
         bool mesaControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 1 && _selectedCol == 1;
@@ -535,6 +547,8 @@ if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
 
         string volcanoTooltip = volcanoAvailable ? "" : BuildUnavailableMessage("Volcano", volcanoInfo, FriendlyBiome2(effB2), FriendlyBiome3(effB3));
         GUIContent volcanoContent = new GUIContent("VOLCANO", volcanoTooltip);
+        wasGuiEnabled = GUI.enabled;
+        GUI.enabled = volcanoAvailable;
         if (GUI.Button(volcanoRect, volcanoContent, GetButtonStyle(isVolcanoSelected)))
         {
             if (volcanoAvailable)
@@ -547,6 +561,7 @@ if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
                 }
             }
         }
+        GUI.enabled = wasGuiEnabled;
         if (!volcanoAvailable) GUI.DrawTexture(volcanoRect, _xTexture);
 
         bool volcanoControllerSelected = _currentInputScheme == InputScheme.Gamepad && _selectedRow == 2 && _selectedCol == 0;
@@ -554,6 +569,8 @@ if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
 
         string swampTooltip = swampAvailable ? "" : BuildUnavailableMessage("Swamp", swampInfo, FriendlyBiome2(effB2), FriendlyBiome3(effB3));
         GUIContent swampContent = new GUIContent("SWAMP", swampTooltip);
+        wasGuiEnabled = GUI.enabled;
+        GUI.enabled = swampAvailable;
         if (GUI.Button(swampRect, swampContent, GetButtonStyle(isSwampSelected)))
         {
             if (swampAvailable)
@@ -566,6 +583,7 @@ if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
                 }
             }
         }
+        GUI.enabled = wasGuiEnabled;
 
         if (!swampAvailable) GUI.DrawTexture(swampRect, _xTexture);
 
@@ -596,7 +614,7 @@ if (GUI.Button(alpineRect, alpineContent, GetButtonStyle(isAlpineSelected)))
         bool clearHover = clearRect.Contains(Event.current.mousePosition);
         bool closeHover = closeRect.Contains(Event.current.mousePosition);
 
-if (GUI.Button(clearRect, "CLEAR", GetButtonStyle(false)))
+        if (GUI.Button(clearRect, "CLEAR", GetButtonStyle(false)))
         {
             if (inRoom) NetworkSync.ClearMyVotes();
             else 
