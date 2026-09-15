@@ -54,38 +54,11 @@ public static class LevelOverridePatch
         if (_biomeToLevels != null)
             return;
 
-        // TEMP TEST OVERRIDE - flip UseTestBiomeMapOverride to false (or delete this block and
-        // BuildTestBiomeToLevels below) to go back to loading the real map from the game.
-        if (UseTestBiomeMapOverride)
-        {
-            _biomeToLevels = BuildTestBiomeToLevels();
-            Plugin.Log.LogWarning("[LevelOverride] TEST OVERRIDE ACTIVE - using synthetic biome map, not real game data!");
-            return;
-        }
-
         MapBaker? baker = SingletonAsset<MapBaker>.Instance;
         if (baker != null)
         {
             _biomeToLevels = BuildBiomeToLevels(baker);
         }
-    }
-
-    // TEMP TEST OVERRIDE FLAG - set to false to resume loading the map from the actual game data.
-    private const bool UseTestBiomeMapOverride = false;
-
-    /// <summary>
-    /// TEMP TEST DATA - deliberately missing "SRMS" (Roots+Mesa) to exercise the cross-column
-    /// exclusion logic, and has no "V" (Volcano) key at all to exercise the globally-unavailable
-    /// case, so the red-X/tooltip behavior can be visually confirmed in the voting menu.
-    /// </summary>
-    private static Dictionary<string, List<int>> BuildTestBiomeToLevels()
-    {
-        return new Dictionary<string, List<int>>
-        {
-            ["STAS"] = new List<int> { 0 }, // Tropics + Alpine + Swamp
-            ["STMS"] = new List<int> { 1 }, // Tropics + Mesa + Swamp
-            ["SRAS"] = new List<int> { 2 }, // Roots + Alpine + Swamp
-        };
     }
 
     /// <summary>
