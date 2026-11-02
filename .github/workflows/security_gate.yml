@@ -1,0 +1,27 @@
+# Security gate: thin caller of the strange_security reusable workflows.
+# Source: the consumer template of strangebasisdevs/strange_security. Dependabot moves the pin.
+name: Security gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  semgrep:
+    name: Semgrep
+    uses: strangebasisdevs/strange_security/.github/workflows/semgrep.yml@b3a6732ecbe1796fb2e7eaeedb228c705962db44 # v1.2.1
+
+  trivy:
+    name: Trivy
+    uses: strangebasisdevs/strange_security/.github/workflows/trivy.yml@b3a6732ecbe1796fb2e7eaeedb228c705962db44 # v1.2.1
+
+  gitleaks:
+    name: Gitleaks
+    uses: strangebasisdevs/strange_security/.github/workflows/gitleaks.yml@b3a6732ecbe1796fb2e7eaeedb228c705962db44 # v1.2.1
