@@ -1,0 +1,31 @@
+# Dependabot has no pull request template, so this posts the note it cannot.
+# The UnityEngine packages have to match the Unity version the game ships with.
+name: Unity bump reminder
+
+on:
+  pull_request:
+    types:
+      - opened
+
+permissions:
+  contents: read
+
+jobs:
+  remind:
+    name: Remind
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && contains(github.event.pull_request.title, 'UnityEngine')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post the reminder
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          BODY: |
+            **Check PEAK's Unity version before merging this.** `UnityEngine.Modules` has to match the Unity version the game ships with.
+
+            Green checks don't cover this. The package is only the fallback for builds without the game installed (`Directory.Build.targets`): a local build uses the game's own DLLs, and no workflow here compiles the mod.
+
+            To check, look for the `Initialize engine version` line in PEAK's `Player.log`. Merge only if it matches the new version. If it doesn't, close this PR and Dependabot won't propose this version again.
+        run: gh pr comment "$PR_URL" --body "$BODY"
