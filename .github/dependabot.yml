@@ -1,8 +1,20 @@
 # Dependabot version updates. Source: the consumer template of strangebasisdevs/strange_security.
 version: 2
+
+# The feeds Directory.Build.targets restores from. Dependabot does not read that
+# property, and its proxy refuses hosts it has not been told about.
+registries:
+  bepinex:
+    type: nuget-feed
+    url: https://nuget.bepinex.dev/v3/index.json
+  windows10ce:
+    type: nuget-feed
+    url: https://nuget.windows10ce.com/nuget/v3/index.json
+
 updates:
   - package-ecosystem: nuget
     directory: /src/VacationPlanner
+    registries: "*"
     schedule:
       interval: weekly
       day: monday
